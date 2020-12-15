@@ -80,24 +80,27 @@ class Player:
 
 
 class GameState:
-    def __init__(self, input_json=None):
+    def __init__(self):
         self.my_hand: List[str] = []
         self.my_pid: int = -1
         self.history: List[list] = []
         self.players: List[Player] = []
-        if input_json is not None:
-            self.load_json(input_json)
 
-    def load_json(self, input_json):
+    def load_json(self, input_json, callback=None):
         if isinstance(input_json, str):
             input_json = json.loads(input_json)
 
-        my_hand = []
-        my_pid = -1
-        history = []
-        players = [Player(i) for i in range(4)]
+        self.my_hand = []
+        self.my_pid = -1
+        self.history = []
+        self.players = [Player(i) for i in range(4)]
 
         def handle_play(pid, args, res):
+            players = self.players
+            history = self.history
+            my_pid = self.my_pid
+            my_hand = self.my_hand
+
             cur_p = players[pid]
             act = args[0]
             # 上回合打出的牌
@@ -112,6 +115,10 @@ class GameState:
             card2 = args[2] if len(args) > 2 else None
 
             def play(card: str = None, meld: Meld = None):
+                # 每次自己的操作前，都会调用callback（参数为当前的GameState，以及己方即将执行的操作）
+                # 方便使用replay来进行训练
+                if pid == my_pid and callback is not None:
+                    callback(self, args)
                 history.append([pid, *args])
                 cur_p.history.append(args)
                 if card is not None:
@@ -143,38 +150,31 @@ class GameState:
                     meld = Meld(GANG, None, None, None)
                 play(meld=meld)
             elif act == BUGANG:  # 补杠
+                play(card1)
                 peng = next(m for m in cur_p.melds if
                             m.type == PENG and m.cards[0] == card1)
                 peng.type = GANG
                 peng.cards.append(card1)
-                play(card1)
 
         def handle_turn(req, res):
-            nonlocal my_pid, my_hand
-
             code = int(req[0])
             args = req[1:]
 
             if code == 0:  # 开局
                 my_pid = int(args[0])
             elif code == 1:  # 发牌
-                for p, n in zip(players, args[:4]):
+                for p, n in zip(self.players, args[:4]):
                     p.n_flowers = int(n)
-                my_hand = args[4:4 + 13]
+                self.my_hand = args[4:4 + 13]
             elif code == 2:  # 己方抽卡
-                my_hand.append(args[0])
-                history.append([my_pid, DRAW])
+                self.my_hand.append(args[0])
+                self.history.append([my_pid, DRAW])
             elif code == 3:  # 行牌
                 handle_play(int(args[0]), args[1:], res)
 
         requests = [r.split() for r in input_json["requests"]]
         responses = [r.split() for r in input_json["responses"]] + [None]
         [handle_turn(rq, rs) for (rq, rs) in zip(requests, responses)]
-
-        self.my_hand = my_hand
-        self.my_pid = my_pid
-        self.history = history
-        self.players = players
 
     def action_space(self):
         if len(self.history) <= 0:
