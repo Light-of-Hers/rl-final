@@ -34,9 +34,9 @@
         + `players`：所有玩家的全局可见信息。
         + `history`：所有玩家的操作历史（包含摸牌操作和补花操作）。
         + `load_json(input_json)`：输入一个json对象，用其转换为对局状态。
-        + `action_space()`：返回一个列表，列表的元素为元组，形如`(PLAY, Card0)`、`(PENG, Card1)`，与[botzone国标麻将的response](https://wiki.botzone.org.cn/index.php?title=Chinese-Standard-Mahjong)的格式类似。该列表表示当前所有的可行操作（可能存在重复的元素）。
+        + `action_space()`：返回一个列表，列表的元素为元组，形如`(PLAY, Card0)`、`(PENG, Card1)`，与[botzone国标麻将的response](https://wiki.botzone.org.cn/index.php?title=Chinese-Standard-Mahjong)的格式类似（除了胡牌的动作，胡牌的动作为`(HU, n_fan)`，其中`n_fan`代表番数）。该列表表示当前所有的可行操作（可能存在重复的元素）。
     + `tactic/`：包含出牌策略。
-      + `rand.py`：当前写的一个随机策略，仅从`action_space`中随机选取一个action返回。
+      + `rand.py`：当前写的一个随机策略，仅从`action_space`中随机选取一个action返回（如果可以胡牌的话肯定会胡牌）。
 
 
 
@@ -49,6 +49,17 @@ python3 -m zipapp mj_bot
 ```
 
 会在根目录获得可执行文件`mj_bot.pyz`，可直接用于在botzone上构建bot。
+
+
+
+## 构建算番器
+
+本地调试需要在本地构建算番器。在项目根目录执行：
+
+```shell
+cd 3rdparty/fan-calculator/Mahjong-GB-Python/
+python3 setup.py install --user
+```
 
 
 

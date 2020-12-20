@@ -13,6 +13,7 @@ def main():
 
     action = tactic(game_state)
     if not isinstance(action, str):
+        assert isinstance(action, (list, tuple))
         action = " ".join(str(x) for x in action)
 
     output_json = json.dumps({

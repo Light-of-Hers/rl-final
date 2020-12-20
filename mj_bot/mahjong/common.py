@@ -234,7 +234,7 @@ class GameState:
                 self.my_hand[-1], True, hand=self.my_hand[:-1])
             if n_fan >= 8:
                 self.log(f"n_fan: {n_fan}")
-                space.append((HU,))
+                space.append((HU, n_fan))
 
         elif act0 in (PLAY, PENG, CHI) and pid0 != self.my_pid:
             card0 = prev_turn[-1]
@@ -252,7 +252,7 @@ class GameState:
                 card0, False, hand=self.my_hand)
             if n_fan >= 8:
                 self.log(f"n_fan: {n_fan}")
-                space.append((HU,))
+                space.append((HU, n_fan))
             # 过
             space.append((PASS,))
         else:
