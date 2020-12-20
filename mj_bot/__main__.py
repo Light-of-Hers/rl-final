@@ -1,6 +1,7 @@
 from mahjong.common import GameState
 from mahjong.tactic import random_tactic
 import json
+import sys
 
 
 def main():
@@ -16,7 +17,9 @@ def main():
 
     output_json = json.dumps({
         "response": action,
+        "debug": game_state.debug_msgs,
     })
+    print('\n'.join(game_state.debug_msgs), file=sys.stderr)
     print(output_json)
 
 

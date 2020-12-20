@@ -1,6 +1,8 @@
 from typing import List
 import json
 
+from MahjongGB import MahjongFanCalculator
+
 BUHUA = "BUHUA"
 DRAW = "DRAW"
 PLAY = "PLAY"
@@ -69,6 +71,15 @@ class Meld:
             cards.remove(self.src_card)
         return cards
 
+    def to_pack(self, my_pid):
+        pack_type = self.type
+        tile_code = self.cards[1]
+        if pack_type == CHI:
+            data = self.cards.index(self.src_card) + 1
+        else:
+            data = 4 - (self.src_pid - my_pid) % 4
+        return pack_type, tile_code, data
+
 
 class Player:
     def __init__(self, player_id):
@@ -85,6 +96,10 @@ class GameState:
         self.my_pid: int = -1
         self.history: List[list] = []
         self.players: List[Player] = []
+        self.debug_msgs = []
+
+    def log(self, msg):
+        self.debug_msgs.append(str(msg))
 
     def load_json(self, input_json, callback=None):
         if isinstance(input_json, str):
@@ -139,13 +154,13 @@ class GameState:
                 play(card1)
             elif act == PENG:  # 碰
                 play(card1, Meld(PENG, [card0] * 3, pid0, card0))
-            elif act == CHI:   # 吃
+            elif act == CHI:  # 吃
                 play(card2, Meld(CHI, make_card_seq(card1), pid0, card0))
             elif act == GANG:  # 杠
                 if card0:  # 直杠
                     meld = Meld(GANG, [card0] * 4, pid0, card0)
                 elif pid == my_pid:  # 己方暗杠
-                    meld = Meld(GANG, [res[2]] * 4, None, None)
+                    meld = Meld(GANG, [res[-1]] * 4, None, None)
                 else:  # 其他玩家暗杠
                     meld = Meld(GANG, None, None, None)
                 play(meld=meld)
@@ -161,20 +176,39 @@ class GameState:
             args = req[1:]
 
             if code == 0:  # 开局
-                my_pid = int(args[0])
+                self.my_pid = int(args[0])
             elif code == 1:  # 发牌
                 for p, n in zip(self.players, args[:4]):
                     p.n_flowers = int(n)
                 self.my_hand = args[4:4 + 13]
             elif code == 2:  # 己方抽卡
                 self.my_hand.append(args[0])
-                self.history.append([my_pid, DRAW])
+                self.history.append([self.my_pid, DRAW])
             elif code == 3:  # 行牌
                 handle_play(int(args[0]), args[1:], res)
 
         requests = [r.split() for r in input_json["requests"]]
-        responses = [r.split() for r in input_json["responses"]] + [None]
+        responses = [None] + [r.split() for r in input_json["responses"]]
         [handle_turn(rq, rs) for (rq, rs) in zip(requests, responses)]
+
+    def calculate_fan(self, win_tile, is_ZIMO, is_JUEZHANG=False,
+                      is_GANG=False, is_last=False, quan_feng=0, hand=None):
+        pack = tuple(
+            m.to_pack(self.my_pid) for m in self.players[self.my_pid].melds)
+        if hand is None:
+            hand = self.my_hand
+        hand = tuple(hand)
+        flower_cnt = self.players[self.my_pid].n_flowers
+        men_feng = self.my_pid
+        try:
+            res = MahjongFanCalculator(pack, hand, win_tile, flower_cnt,
+                                       is_ZIMO, is_JUEZHANG, is_GANG,
+                                       is_last, men_feng, quan_feng)
+        except Exception as err:
+            self.log(err)
+            self.log(f"{pack}, {hand}, {win_tile}")
+            return 0
+        return sum(v for (v, d) in res)
 
     def action_space(self):
         if len(self.history) <= 0:
@@ -193,9 +227,15 @@ class GameState:
                 if m.type == PENG and m.cards[0] in self.my_hand)
             # 暗杠
             space.extend(
-                (GANG, c) for c in set(self.my_hand) if self.my_hand.count(c) >= 4)
-            # 暂时没有考虑胡……
-            # TODO: 用 https://github.com/ailab-pku/Chinese-Standard-Mahjong/tree/master/fan-calculator-usage 来算番
+                (GANG, c) for c in set(self.my_hand) if
+                self.my_hand.count(c) >= 4)
+            # 自摸胡牌
+            n_fan = self.calculate_fan(
+                self.my_hand[-1], True, hand=self.my_hand[:-1])
+            if n_fan >= 8:
+                self.log(f"n_fan: {n_fan}")
+                space.append((HU,))
+
         elif act0 in (PLAY, PENG, CHI) and pid0 != self.my_pid:
             card0 = prev_turn[-1]
             if card0 in self.my_hand:
@@ -207,6 +247,13 @@ class GameState:
             if (pid0 + 1) % 4 == self.my_pid:
                 # 吃
                 space.extend(chi_space(self.my_hand, card0))
+            # 点炮胡牌
+            n_fan = self.calculate_fan(
+                card0, False, hand=self.my_hand)
+            if n_fan >= 8:
+                self.log(f"n_fan: {n_fan}")
+                space.append((HU,))
+            # 过
             space.append((PASS,))
         else:
             space.append((PASS,))
