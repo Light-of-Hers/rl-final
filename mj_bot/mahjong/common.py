@@ -314,7 +314,7 @@ class GameState:
 
         requests = [r.split() for r in input_json["requests"]]
         responses = [None] + [r.split() for r in input_json["responses"]]
-        [self._handle_turn(rq, rs[-1] if rs[0] == GANG else None)
+        [self._handle_turn(rq, rs[-1] if rs is not None and rs[0] == GANG else None)
          for (rq, rs) in zip(requests, responses)]
 
     def calculate_fan(self, win_tile, is_ZIMO, is_JUEZHANG=False,
