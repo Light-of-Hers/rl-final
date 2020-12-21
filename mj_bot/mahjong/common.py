@@ -1,5 +1,6 @@
 from typing import List
 import json
+from functools import reduce
 
 from MahjongGB import MahjongFanCalculator
 
@@ -9,9 +10,37 @@ PLAY = "PLAY"
 PENG = "PENG"
 CHI = "CHI"
 GANG = "GANG"
+MINGANG = "MINGANG"
+ANGANG = "ANGANG"
 BUGANG = "BUGANG"
 PASS = "PASS"
 HU = "HU"
+
+CARDS = []
+[CARDS.extend(f"{t}{n}" for n in range(1, 10)) for t in "WBT"]
+CARDS.extend(f"F{n}" for n in range(1, 5))
+CARDS.extend(f"J{n}" for n in range(1, 4))
+CARDS.extend(f"H{n}" for n in range(1, 9))
+
+ZH2EN = {
+    "摸牌": DRAW,
+    "打牌": PLAY,
+    "碰": PENG,
+    "吃": CHI,
+    "补花": BUHUA,
+    "补花后摸牌": DRAW,
+    "杠": GANG,
+    "杠后摸牌": DRAW,
+    "补杠": BUGANG,
+    "明杠": MINGANG,
+    "暗杠": ANGANG,
+    "和牌": HU,
+    "自摸": HU,
+}
+
+[ZH2EN.update({tk: tk}) for tk in
+ ("东", "南", "西", "北", "荒庄",)]
+[ZH2EN.update({tk: tk}) for tk in CARDS]
 
 
 def card_type(card):
@@ -91,105 +120,202 @@ class Player:
 
 
 class GameState:
+    _eval_glb = {**globals(), **ZH2EN}
+
     def __init__(self):
         self.my_hand: List[str] = []
         self.my_pid: int = -1
         self.history: List[list] = []
         self.players: List[Player] = []
+        self.callback = None
         self.debug_msgs = []
 
     def log(self, msg):
         self.debug_msgs.append(str(msg))
 
-    def load_json(self, input_json, callback=None):
-        if isinstance(input_json, str):
-            input_json = json.loads(input_json)
-
+    def reset(self, callback=None):
         self.my_hand = []
         self.my_pid = -1
         self.history = []
         self.players = [Player(i) for i in range(4)]
+        self.callback = callback
 
-        def handle_play(pid, args, res):
-            players = self.players
-            history = self.history
-            my_pid = self.my_pid
-            my_hand = self.my_hand
+    def _rec2req(self, rec, rec1=None):
+        pid, act, cards, *rest = rec
+        pid1, act1, cards1, *rest1 = None, None, []
+        hidden_card = None
+        if rec1 is not None:
+            pid1, act1, cards1, *rest1 = rec1
+        if act == PENG:
+            req = 3, pid, PENG, cards1[0]
+        elif act == CHI:
+            req = 3, pid, CHI, cards[1], cards1[0]
+        elif act == MINGANG:
+            req = 3, pid, GANG
+        elif act == ANGANG:
+            req = 3, pid, GANG
+            hidden_card = cards[0]
+        elif act == DRAW:
+            if pid == self.my_pid:
+                req = 2, cards[0]
+            else:
+                req = 3, pid, DRAW
+        elif act == BUGANG:
+            req = 3, pid, BUGANG, cards[0]
+        elif act == PLAY:
+            req = 3, pid, PLAY, cards[0]
+        elif act == BUHUA:
+            req = 3, pid, BUHUA
+        elif act == HU:
+            req = 3, pid, HU
+        else:
+            assert False
 
-            cur_p = players[pid]
-            act = args[0]
-            # 上回合打出的牌
-            card0, pid0 = None, None
-            if len(history) > 0:
-                prev_turn = history[-1]
-                pid0 = prev_turn[0]
-                if len(prev_turn) > 2:
-                    card0 = prev_turn[-1]
-            # 该回合打出的牌
-            card1 = args[1] if len(args) > 1 else None
-            card2 = args[2] if len(args) > 2 else None
+        return req, hidden_card
 
-            def play(card: str = None, meld: Meld = None):
-                # 每次自己的操作前，都会调用callback（参数为当前的GameState，以及己方即将执行的操作）
-                # 方便使用replay来进行训练
-                if pid == my_pid and callback is not None:
-                    callback(self, args)
-                history.append([pid, *args])
-                cur_p.history.append(args)
-                if card is not None:
-                    cur_p.played.append(card)
-                    if pid == my_pid:
-                        my_hand.remove(card)
-                if meld is not None:
-                    cur_p.melds.append(meld)
-                    if pid == my_pid:
-                        [my_hand.remove(c) for c in meld.cards_from_self()]
+    def load_replay(self, replay_lines, callback=None):
+        if isinstance(replay_lines, str):
+            replay_lines = replay_lines.split('\n')
+        assert replay_lines[0].strip()[-4:] == ".xml"
+        replay_lines = [[eval(tk, self._eval_glb) for tk in rl.strip().split()]
+                        for rl in replay_lines[1:]]
 
-            if act == BUHUA:  # 补花
-                cur_p.n_flowers += 1
-                history.append([pid, *args])
-            elif act == DRAW:  # 抽牌
-                history.append([pid, *args])
-            elif act == PLAY:  # 出牌
-                play(card1)
-            elif act == PENG:  # 碰
-                play(card1, Meld(PENG, [card0] * 3, pid0, card0))
-            elif act == CHI:  # 吃
-                play(card2, Meld(CHI, make_card_seq(card1), pid0, card0))
-            elif act == GANG:  # 杠
-                if card0:  # 直杠
-                    meld = Meld(GANG, [card0] * 4, pid0, card0)
-                elif pid == my_pid:  # 己方暗杠
-                    meld = Meld(GANG, [res[-1]] * 4, None, None)
-                else:  # 其他玩家暗杠
-                    meld = Meld(GANG, None, None, None)
-                play(meld=meld)
-            elif act == BUGANG:  # 补杠
-                play(card1)
-                peng = next(m for m in cur_p.melds if
-                            m.type == PENG and m.cards[0] == card1)
-                peng.type = GANG
-                peng.cards.append(card1)
+        self.reset(callback)
 
-        def handle_turn(req, res):
-            code = int(req[0])
-            args = req[1:]
+        if replay_lines[0][-1] == HU:
+            self.my_pid = replay_lines[-1][0]
+        else:
+            self.my_pid = 0
 
-            if code == 0:  # 开局
-                self.my_pid = int(args[0])
-            elif code == 1:  # 发牌
-                for p, n in zip(self.players, args[:4]):
-                    p.n_flowers = int(n)
-                self.my_hand = args[4:4 + 13]
-            elif code == 2:  # 己方抽卡
-                self.my_hand.append(args[0])
-                self.history.append([self.my_pid, DRAW])
-            elif code == 3:  # 行牌
-                handle_play(int(args[0]), args[1:], res)
+        for i, p in enumerate(self.players):
+            p.n_flowers = replay_lines[i + 1][-1]
+        self.my_hand = replay_lines[self.my_pid + 1][1]
+
+        records: list = replay_lines[5:]
+        idx, n_recs = 0, len(records)
+        while idx < n_recs:
+            pid, act, cards, *rest = records[idx]
+            hidden_card = None
+            if act == PENG:
+                idx += 1
+                card1 = records[idx][2][0]
+                req = 3, pid, PENG, card1
+            elif act == CHI:
+                idx += 1
+                card1 = records[idx][2][0]
+                req = 3, pid, CHI, cards[1], card1
+            elif act == MINGANG:
+                req = 3, pid, GANG
+            elif act == ANGANG:
+                req = 3, pid, GANG
+                hidden_card = cards[0]
+            elif act == DRAW:
+                if pid == self.my_pid:
+                    req = 2, cards[0]
+                else:
+                    req = 3, pid, DRAW
+            elif act == BUGANG:
+                req = 3, pid, BUGANG, cards[0]
+            elif act == PLAY:
+                req = 3, pid, PLAY, cards[0]
+            elif act == BUHUA:
+                req = 3, pid, BUHUA
+            elif act == HU:
+                req = 3, pid, HU
+            else:
+                assert False
+            self._handle_turn(req, hidden_card)
+            idx += 1
+
+    def _handle_play(self, pid, args, hidden_card):
+        players = self.players
+        history = self.history
+        my_pid = self.my_pid
+        my_hand = self.my_hand
+
+        cur_p = players[pid]
+        act = args[0]
+        # 上回合打出的牌
+        card0, pid0 = None, None
+        if len(history) > 0:
+            prev_turn = history[-1]
+            pid0 = prev_turn[0]
+            if len(prev_turn) > 2:
+                card0 = prev_turn[-1]
+        # 该回合打出的牌
+        card1 = args[1] if len(args) > 1 else None
+        card2 = args[2] if len(args) > 2 else None
+
+        def play(card: str = None, meld: Meld = None):
+            # 每次自己的操作前，都会调用callback（参数为当前的GameState，以及己方即将执行的操作）
+            # 方便使用replay来进行训练
+            if pid == my_pid and self.callback is not None:
+                self.callback(self, args)
+            history.append([pid, *args])
+            cur_p.history.append(args)
+            if card is not None:
+                cur_p.played.append(card)
+                if pid == my_pid:
+                    my_hand.remove(card)
+            if meld is not None:
+                cur_p.melds.append(meld)
+                if pid == my_pid:
+                    [my_hand.remove(c) for c in meld.cards_from_self()]
+
+        if act == BUHUA:  # 补花
+            cur_p.n_flowers += 1
+            history.append([pid, *args])
+        elif act == DRAW:  # 抽牌
+            history.append([pid, *args])
+        elif act == PLAY:  # 出牌
+            play(card1)
+        elif act == PENG:  # 碰
+            play(card1, Meld(PENG, [card0] * 3, pid0, card0))
+        elif act == CHI:  # 吃
+            play(card2, Meld(CHI, make_card_seq(card1), pid0, card0))
+        elif act == GANG:  # 杠
+            if card0:  # 直杠
+                meld = Meld(GANG, [card0] * 4, pid0, card0)
+            elif pid == my_pid:  # 己方暗杠
+                meld = Meld(GANG, [hidden_card] * 4, None, None)
+            else:  # 其他玩家暗杠
+                meld = Meld(GANG, None, None, None)
+            play(meld=meld)
+        elif act == BUGANG:  # 补杠
+            play(card1)
+            peng = next(m for m in cur_p.melds if
+                        m.type == PENG and m.cards[0] == card1)
+            peng.type = GANG
+            peng.cards.append(card1)
+        elif act == HU:
+            play()
+
+    def _handle_turn(self, req, hidden_card=None):
+        code = int(req[0])
+        args = req[1:]
+
+        if code == 0:  # 开局
+            self.my_pid = int(args[0])
+        elif code == 1:  # 发牌
+            for p, n in zip(self.players, args[:4]):
+                p.n_flowers = int(n)
+            self.my_hand = args[4:4 + 13]
+        elif code == 2:  # 己方抽卡
+            self.my_hand.append(args[0])
+            self.history.append([self.my_pid, DRAW])
+        elif code == 3:  # 行牌
+            self._handle_play(int(args[0]), args[1:], hidden_card)
+
+    def load_json(self, input_json, callback=None):
+        if isinstance(input_json, str):
+            input_json = json.loads(input_json)
+
+        self.reset(callback)
 
         requests = [r.split() for r in input_json["requests"]]
         responses = [None] + [r.split() for r in input_json["responses"]]
-        [handle_turn(rq, rs) for (rq, rs) in zip(requests, responses)]
+        [self._handle_turn(rq, rs[-1] if rs[0] == GANG else None)
+         for (rq, rs) in zip(requests, responses)]
 
     def calculate_fan(self, win_tile, is_ZIMO, is_JUEZHANG=False,
                       is_GANG=False, is_last=False, quan_feng=0, hand=None):
