@@ -381,16 +381,6 @@ class GameState:
             try_to_hu(n_fan)
             # 过
             space.append((PASS,))
-        # 枪杠和？
-        elif act0 == GANG and pid0 != self.my_pid:
-            win_tile = (self.players[pid0].melds[-1].cards or [None])[-1]
-            if win_tile is not None:
-                n_fan = self.calculate_fan(win_tile, is_GANG=True)
-                try_to_hu(n_fan)
-        elif act0 == BUGANG and pid0 != self.my_pid:
-            win_tile = prev_turn[-1]
-            n_fan = self.calculate_fan(win_tile, is_GANG=True)
-            try_to_hu(n_fan)
         else:
             space.append((PASS,))
         return space
