@@ -315,9 +315,9 @@ class GameState:
         requests = [r.split() for r in input_json["requests"]]
         responses = [None] + [r.split() for r in input_json["responses"]]
         [self._handle_turn(rq, rs[-1] if rs is not None and rs[0] == GANG else None)
-         for (rq, rs) in zip(requests, responses)]
+            for (rq, rs) in zip(requests, responses)]
 
-    def calculate_fan(self, win_tile, is_ZIMO, is_JUEZHANG=False,
+    def calculate_fan(self, win_tile, is_ZIMO=False, is_JUEZHANG=False,
                       is_GANG=False, is_last=False, quan_feng=0, hand=None):
         pack = tuple(
             m.to_pack(self.my_pid) for m in self.players[self.my_pid].melds)
@@ -344,6 +344,12 @@ class GameState:
         pid0 = prev_turn[0]
         act0 = prev_turn[1]
         space = []
+
+        def try_to_hu(n_f):
+            if n_f >= 8:
+                self.log(f"n_fan: {n_f}")
+                space.append((HU, n_f))
+
         if act0 == DRAW and pid0 == self.my_pid:
             # 直接出牌
             space.extend((PLAY, c) for c in self.my_hand)
@@ -357,11 +363,8 @@ class GameState:
                 self.my_hand.count(c) >= 4)
             # 自摸胡牌
             n_fan = self.calculate_fan(
-                self.my_hand[-1], True, hand=self.my_hand[:-1])
-            if n_fan >= 8:
-                self.log(f"n_fan: {n_fan}")
-                space.append((HU, n_fan))
-
+                self.my_hand[-1], is_ZIMO=True, hand=self.my_hand[:-1])
+            try_to_hu(n_fan)
         elif act0 in (PLAY, PENG, CHI) and pid0 != self.my_pid:
             card0 = prev_turn[-1]
             if card0 in self.my_hand:
@@ -374,13 +377,20 @@ class GameState:
                 # 吃
                 space.extend(chi_space(self.my_hand, card0))
             # 点炮胡牌
-            n_fan = self.calculate_fan(
-                card0, False, hand=self.my_hand)
-            if n_fan >= 8:
-                self.log(f"n_fan: {n_fan}")
-                space.append((HU, n_fan))
+            n_fan = self.calculate_fan(card0)
+            try_to_hu(n_fan)
             # 过
             space.append((PASS,))
+        # 枪杠和？
+        elif act0 == GANG and pid0 != self.my_pid:
+            win_tile = (self.players[pid0].melds[-1].cards or [None])[-1]
+            if win_tile is not None:
+                n_fan = self.calculate_fan(win_tile, is_GANG=True)
+                try_to_hu(n_fan)
+        elif act0 == BUGANG and pid0 != self.my_pid:
+            win_tile = prev_turn[-1]
+            n_fan = self.calculate_fan(win_tile, is_GANG=True)
+            try_to_hu(n_fan)
         else:
             space.append((PASS,))
         return space
