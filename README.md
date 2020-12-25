@@ -42,10 +42,10 @@
 
 ## 构建bot
 
-在项目根目录执行命令：
+运行根目录的文件`handin.py`：
 
 ```python
-python3 -m zipapp mj_bot
+python3 handin.py
 ```
 
 会在根目录获得可执行文件`mj_bot.pyz`，可直接用于在botzone上构建bot。
