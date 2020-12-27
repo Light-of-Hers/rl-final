@@ -280,7 +280,7 @@ class GameState:
             if card0:  # 直杠
                 meld = Meld(GANG, [card0] * 4, pid0, card0)
             elif pid == my_pid:  # 己方暗杠
-                meld = Meld(GANG, [hidden_card] * 4, None, None)
+                meld = Meld(GANG, [hidden_card] * 4, self.my_pid, hidden_card)
             else:  # 其他玩家暗杠
                 meld = Meld(GANG, None, None, None)
             play(meld=meld)
