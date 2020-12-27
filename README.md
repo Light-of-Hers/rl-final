@@ -40,7 +40,9 @@
 
 
 
-## 构建bot
+## 项目使用
+
+### 构建bot
 
 运行根目录的文件`handin.py`：
 
@@ -52,7 +54,7 @@ python3 handin.py
 
 
 
-## 构建算番器
+### 构建算番器
 
 本地调试需要在本地构建算番器。在项目根目录执行：
 
@@ -63,13 +65,35 @@ python3 setup.py install --user
 
 
 
-## 修改策略
+### 修改策略
 
 在`tactic/`中添加新的文件、函数。一个出牌策略应该是一个函数，参数为一个`GameState`，返回一个action（类似`GameState.action_space`函数返回的列表的元素）。
 
 
 
-## 策略描述
+## 调研工作
+
+### [*Method for Constructing Artificial Intelligence Player with Abstraction to Markov Decision Processes in Multiplayer Game of Mahjong*](https://arxiv.org/pdf/1904.07491.pdf)
+
++ 内容简介：
+  + 形式化地构建了麻将游戏（该文中以日麻作为标准）中各个玩家的MDP模型。
+  + 在构建的MDP的基础上推导出对局状态的估值函数（函数中的诸多参数需要借助统计学习手段获得）。
++ 对项目的帮助：
+  + 本文更注重模型的构建与分析，对搜索策略的设计有一定启发，但暂无更多的帮助。
+
+
+
+### [*Building a Computer Mahjong Player via Deep Convolutional Neural Networks*](https://arxiv.org/pdf/1906.02146v2.pdf)
+
+[参见策略设计中的监督学习部分](#监督学习)
+
+
+
+### [A novel deep residual network-based incomplete information competition strategy for four-players Mahjong games](https://www.researchgate.net/journal/Multimedia-Tools-and-Applications-1573-7721/publication/332881141_A_novel_deep_residual_network-based_incomplete_information_competition_strategy_for_four-players_Mahjong_games/links/5f75901692851c14bca41166/A-novel-deep-residual-network-based-incomplete-information-competition-strategy-for-four-players-Mahjong-games.pdf?_sg%5B0%5D=amkTcQ6o_rJdTlcjZFDc9XRLxgxsIpNoSYpLNb4RkEE9uO7OYOwKumZ8KQZM5acAX1KAlPLiq6d3HXASEBOJ2Q.Z-zRoSUklBStPXTIOBwmYPfvEZbdA0nBOQSDmixKiBpv_wLFE9T5zvZrzxMIS-hhu1Pz7_FclS0HEUs3mwsxTA&_sg%5B1%5D=sRDGRRFARzULWKLg4fNj4OJnce7Mow2qEonxyuQfhzMsOuSuRsthwTwbogxzu-yoaIPblOSqlG0-uCmef6yu7Q5x5_7MIi8lJrv5cnkua2qn.Z-zRoSUklBStPXTIOBwmYPfvEZbdA0nBOQSDmixKiBpv_wLFE9T5zvZrzxMIS-hhu1Pz7_FclS0HEUs3mwsxTA&_iepl=)
+
+
+
+## 策略设计
 
 ### Rule-based
 
@@ -89,9 +113,9 @@ python3 setup.py install --user
 
 ##### 数据表示
 
-- 数据是大小为34 × 4 × 63，是63个34 × 4的0/1矩阵
+- 数据是大小为63 x 34 × 4，是63个34 × 4的0/1矩阵。
 - 矩阵的每个元素对应麻将的一张牌，34行分别对应麻将的34种花色，4列即每种牌4张
-  - 1表示有该牌，0表示没有
+  - 1表示有该牌，0表示没有。
   - 某花色有1张牌，对应行就是1 0 0 0；有2张，对应行就是1 1 0 0；以此类推……
 - 为了表示一个操作时的状态，共需要63个矩阵
   - 自己的手牌：1个
