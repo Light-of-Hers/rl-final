@@ -1,6 +1,7 @@
 from typing import List
 import json
 from functools import reduce
+import numpy as np
 
 from MahjongGB import MahjongFanCalculator
 
@@ -10,14 +11,14 @@ PLAY = "PLAY"
 PENG = "PENG"
 CHI = "CHI"
 GANG = "GANG"
-MINGANG = "MINGANG"
+MINGGANG = "MINGGANG"
 ANGANG = "ANGANG"
 BUGANG = "BUGANG"
 PASS = "PASS"
 HU = "HU"
 
 CARDS = []
-[CARDS.extend(f"{t}{n}" for n in range(1, 10)) for t in "WBT"]
+CARDS.extend(f"{t}{n}" for n in range(1, 10) for t in "WBT")
 CARDS.extend(f"F{n}" for n in range(1, 5))
 CARDS.extend(f"J{n}" for n in range(1, 4))
 CARDS.extend(f"H{n}" for n in range(1, 9))
@@ -32,7 +33,7 @@ ZH2EN = {
     "杠": GANG,
     "杠后摸牌": DRAW,
     "补杠": BUGANG,
-    "明杠": MINGANG,
+    "明杠": MINGGANG,
     "暗杠": ANGANG,
     "和牌": HU,
     "自摸": HU,
@@ -87,6 +88,39 @@ def peng_space(hand: List[str], card):
     return []
 
 
+def encode_tile(tile):
+    if tile[0] == 'W':
+        row = int(tile[1]) - 1  # 0-8是万
+    elif tile[0] == 'T':
+        row = int(tile[1]) + 8  # 9-17是条
+    elif tile[0] == 'B':
+        row = int(tile[1]) + 17  # 18-26是筒
+    elif tile[0] == 'F':
+        row = int(tile[1]) + 26  # 27-30分别是东南西北
+    elif tile[0] == 'J':
+        row = int(tile[1]) + 30  # 31-33分别是红中、发财、白板
+    else:
+        assert False, tile
+    return row
+
+
+# 将手牌转换成34×4的二维数组
+def tiles_to_plane(tiles):
+    plane = np.zeros(136, dtype=int).reshape(-1, 4)
+    for tile in tiles:
+        row = encode_tile(tile)
+        for i in range(4):
+            if plane[row][i] == 0:
+                plane[row][i] = 1
+                break
+    return plane
+
+
+def melds_to_plane(melds):
+    # 将所有吃、碰、杠的牌展开成一维
+    return tiles_to_plane([tile for meld in melds for tile in meld.cards])
+
+
 class Meld:
     def __init__(self, meld_type, cards, src_pid, src_card):
         self.type: str = meld_type
@@ -116,7 +150,7 @@ class Player:
         self.melds: List[Meld] = []
         self.n_flowers: int = 0
         self.history: List[list] = []
-        self.played: List[str] = []
+        self.played_cards: List[str] = []
 
 
 class GameState:
@@ -139,39 +173,6 @@ class GameState:
         self.history = []
         self.players = [Player(i) for i in range(4)]
         self.callback = callback
-
-    def _rec2req(self, rec, rec1=None):
-        pid, act, cards, *rest = rec
-        pid1, act1, cards1, *rest1 = None, None, []
-        hidden_card = None
-        if rec1 is not None:
-            pid1, act1, cards1, *rest1 = rec1
-        if act == PENG:
-            req = 3, pid, PENG, cards1[0]
-        elif act == CHI:
-            req = 3, pid, CHI, cards[1], cards1[0]
-        elif act == MINGANG:
-            req = 3, pid, GANG
-        elif act == ANGANG:
-            req = 3, pid, GANG
-            hidden_card = cards[0]
-        elif act == DRAW:
-            if pid == self.my_pid:
-                req = 2, cards[0]
-            else:
-                req = 3, pid, DRAW
-        elif act == BUGANG:
-            req = 3, pid, BUGANG, cards[0]
-        elif act == PLAY:
-            req = 3, pid, PLAY, cards[0]
-        elif act == BUHUA:
-            req = 3, pid, BUHUA
-        elif act == HU:
-            req = 3, pid, HU
-        else:
-            assert False
-
-        return req, hidden_card
 
     def load_replay(self, replay_lines, callback=None):
         if isinstance(replay_lines, str):
@@ -204,13 +205,17 @@ class GameState:
                 idx += 1
                 card1 = records[idx][2][0]
                 req = 3, pid, CHI, cards[1], card1
-            elif act == MINGANG:
+            elif act == MINGGANG:
                 req = 3, pid, GANG
             elif act == ANGANG:
                 req = 3, pid, GANG
                 hidden_card = cards[0]
             elif act == DRAW:
-                if pid == self.my_pid:
+                if cards[0][0] == 'H':  # 补花
+                    idx += 1
+                    assert records[idx][1] == BUHUA
+                    req = 3, pid, BUHUA, cards[0]
+                elif pid == self.my_pid:
                     req = 2, cards[0]
                 else:
                     req = 3, pid, DRAW
@@ -218,12 +223,10 @@ class GameState:
                 req = 3, pid, BUGANG, cards[0]
             elif act == PLAY:
                 req = 3, pid, PLAY, cards[0]
-            elif act == BUHUA:
-                req = 3, pid, BUHUA
             elif act == HU:
                 req = 3, pid, HU
             else:
-                assert False
+                assert False, records[idx]
             self._handle_turn(req, hidden_card)
             idx += 1
 
@@ -249,12 +252,12 @@ class GameState:
         def play(card: str = None, meld: Meld = None):
             # 每次自己的操作前，都会调用callback（参数为当前的GameState，以及己方即将执行的操作）
             # 方便使用replay来进行训练
-            if pid == my_pid and self.callback is not None:
-                self.callback(self, args)
+            if self.callback is not None:
+                self.callback(self, pid, args)
             history.append([pid, *args])
             cur_p.history.append(args)
             if card is not None:
-                cur_p.played.append(card)
+                cur_p.played_cards.append(card)
                 if pid == my_pid:
                     my_hand.remove(card)
             if meld is not None:
@@ -384,3 +387,15 @@ class GameState:
         else:
             space.append((PASS,))
         return space
+
+    def encode(self):
+        my_pid = self.my_pid
+        players = self.players
+        encoded_state = np.concatenate((
+            np.array([tiles_to_plane(self.my_hand)]),
+            *(np.array([tiles_to_plane(players[(my_pid + i) % 4].played_cards)])
+              for i in range(4)),
+            *(np.array([melds_to_plane(players[(my_pid + i) % 4].melds)])
+              for i in range(4)),
+        ))
+        return encoded_state
