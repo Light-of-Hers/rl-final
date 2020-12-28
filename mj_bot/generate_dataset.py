@@ -38,9 +38,12 @@ class DatasetGenerator:
             self._other_played = False
             if pid != my_pid:
                 cur_data = self._push_state(game_state)
-                self.peng_data.append(cur_data)
-                self.peng_label.append(self._scalars[0])
-                if (pid + 1) % 4 == my_pid:
+                space = game_state.action_space()
+                # 仅在可以吃/碰的情况下判断碰还是不碰
+                if next((act[0] == PENG for act in space), None) is not None:
+                    self.peng_data.append(cur_data)
+                    self.peng_label.append(self._scalars[0])
+                if next((act[0] == CHI for act in space), None) is not None:
                     self.chi_data.append(cur_data)
                     self.chi_label.append(self._scalars[0])
 
@@ -55,6 +58,7 @@ class DatasetGenerator:
                 self.peng_data.append(cur_data)
                 self.peng_label.append(self._scalars[1])
 
+                # 碰后出牌
                 src_pid = game_state.history[-1][0]
                 src_card = game_state.history[-1][-1]
                 meld = Meld(PENG, [src_card] * 3, src_pid, src_card)
@@ -76,6 +80,7 @@ class DatasetGenerator:
                 self.chi_data.append(cur_data)
                 self.chi_label.append(self._scalars[rel_pos])
 
+                # 吃后出牌
                 meld = Meld(CHI, make_card_seq(mid_card), src_pid, src_card)
                 with game_state.save_peng_chi_state():
                     [game_state.my_hand.remove(c)
