@@ -26,6 +26,9 @@ class DatasetGenerator:
         self._history.append(game_state.encode())
         self._history.pop(0)
         assert len(self._history) == 7
+        return self._get_cur_data()
+
+    def _get_cur_data(self):
         return np.concatenate(self._history)
 
     def handle_state_and_action(self, game_state: GameState, pid: int, action: tuple):
@@ -37,15 +40,20 @@ class DatasetGenerator:
         if self._other_played:
             self._other_played = False
             if pid != my_pid:
-                cur_data = self._push_state(game_state)
                 space = game_state.action_space()
-                # 仅在可以吃/碰的情况下判断碰还是不碰
-                if next((act[0] == PENG for act in space), None) is not None:
-                    self.peng_data.append(cur_data)
-                    self.peng_label.append(self._scalars[0])
-                if next((act[0] == CHI for act in space), None) is not None:
-                    self.chi_data.append(cur_data)
-                    self.chi_label.append(self._scalars[0])
+                can_peng = next(
+                    (act[0] == PENG for act in space), None) is not None
+                can_chi = next(
+                    (act[0] == CHI for act in space), None) is not None
+                if can_peng or can_chi:
+                    cur_data = self._push_state(game_state)
+                    # 仅在可以吃/碰的情况下考虑不吃/不碰
+                    if can_peng:
+                        self.peng_data.append(cur_data)
+                        self.peng_label.append(self._scalars[0])
+                    if can_chi:
+                        self.chi_data.append(cur_data)
+                        self.chi_label.append(self._scalars[0])
 
         if pid == my_pid:
             if action[0] == PLAY:
