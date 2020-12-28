@@ -56,12 +56,18 @@ class DatasetGenerator:
                         self.chi_label.append(self._scalars[0])
 
         if pid == my_pid:
+            
             if action[0] == PLAY:
                 cur_data = self._push_state(game_state)
                 tile_code = encode_tile(action[-1])
                 self.play_data.append(cur_data)
                 self.play_label.append(self._scalars[tile_code])
+
             elif action[0] == PENG:
+                src_act = game_state.history[-1][1]
+                if src_act not in (PLAY, PENG, CHI):
+                    return
+
                 cur_data = self._push_state(game_state)
                 self.peng_data.append(cur_data)
                 self.peng_label.append(self._scalars[1])
@@ -80,6 +86,10 @@ class DatasetGenerator:
                 self.play_label.append(self._scalars[tile_code])
 
             elif action[0] == CHI:
+                src_act = game_state.history[-1][1]
+                if src_act not in (PLAY, PENG, CHI):
+                    return
+
                 cur_data = self._push_state(game_state)
                 src_pid = game_state.history[-1][0]
                 src_card = game_state.history[-1][-1]

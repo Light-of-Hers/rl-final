@@ -207,7 +207,8 @@ class GameState:
 
         records: list = replay_lines[5:]
         idx, n_recs = 0, len(records)
-        while idx < n_recs:
+        stop = False
+        while idx < n_recs and not stop:
             pid, act, cards, *rest = records[idx]
             hidden_card = None
             if act == PENG:
@@ -241,7 +242,7 @@ class GameState:
                 req = 3, pid, HU
             else:
                 assert False, records[idx]
-            self._handle_turn(req, hidden_card)
+            stop = self._handle_turn(req, hidden_card)
             idx += 1
 
     def _handle_play(self, pid, args, hidden_card):
@@ -272,7 +273,10 @@ class GameState:
             if meld is not None:
                 cur_p.melds.append(meld)
                 if pid == self.my_pid:
+                    print(meld.cards_from_self())
                     [self.my_hand.remove(c) for c in meld.cards_from_self()]
+
+        stop = False
 
         if act == BUHUA:  # 补花
             cur_p.n_flowers += 1
@@ -301,10 +305,15 @@ class GameState:
             peng.cards.append(card1)
         elif act == HU:
             play()
+            stop = True
+
+        return stop
 
     def _handle_turn(self, req, hidden_card=None):
         code = int(req[0])
         args = req[1:]
+
+        stop = False
 
         if code == 0:  # 开局
             self.my_pid = int(args[0])
@@ -316,7 +325,9 @@ class GameState:
             self.my_hand.append(args[0])
             self.history.append([self.my_pid, DRAW])
         elif code == 3:  # 行牌
-            self._handle_play(int(args[0]), args[1:], hidden_card)
+            stop = self._handle_play(int(args[0]), args[1:], hidden_card)
+
+        return stop
 
     def load_json(self, input_json, callback=None):
         if isinstance(input_json, str):
@@ -326,8 +337,11 @@ class GameState:
 
         requests = [r.split() for r in input_json["requests"]]
         responses = [None] + [r.split() for r in input_json["responses"]]
-        [self._handle_turn(rq, rs[-1] if rs is not None and rs[0] == GANG else None)
-            for (rq, rs) in zip(requests, responses)]
+        for rq, rs in zip(requests, responses):
+            stop = self._handle_turn(
+                rq, rs[-1] if rs is not None and rs[0] == GANG else None)
+            if stop:
+                break
 
     def calculate_fan(self, win_tile, is_ZIMO=False, is_JUEZHANG=False,
                       is_GANG=False, is_last=False, quan_feng=0, hand=None):
