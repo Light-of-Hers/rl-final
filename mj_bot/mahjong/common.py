@@ -1,6 +1,7 @@
 from typing import List
 import json
 from functools import reduce
+from contextlib import contextmanager
 import numpy as np
 
 from MahjongGB import MahjongFanCalculator
@@ -167,6 +168,16 @@ class GameState:
     def log(self, msg):
         self.debug_msgs.append(str(msg))
 
+    @contextmanager
+    def save_peng_chi_state(self):
+        saved_hand = self.my_hand[:]
+        saved_melds = self.players[self.my_pid].melds[:]
+        try:
+            yield None
+        finally:
+            self.my_hand = saved_hand
+            self.players[self.my_pid].melds = saved_melds
+
     def reset(self, callback=None):
         self.my_hand = []
         self.my_pid = -1
@@ -231,17 +242,12 @@ class GameState:
             idx += 1
 
     def _handle_play(self, pid, args, hidden_card):
-        players = self.players
-        history = self.history
-        my_pid = self.my_pid
-        my_hand = self.my_hand
-
-        cur_p = players[pid]
+        cur_p = self.players[pid]
         act = args[0]
         # 上回合打出的牌
         card0, pid0 = None, None
-        if len(history) > 0:
-            prev_turn = history[-1]
+        if len(self.history) > 0:
+            prev_turn = self.history[-1]
             pid0 = prev_turn[0]
             if len(prev_turn) > 2:
                 card0 = prev_turn[-1]
@@ -254,22 +260,22 @@ class GameState:
             # 方便使用replay来进行训练
             if self.callback is not None:
                 self.callback(self, pid, args)
-            history.append([pid, *args])
+            self.history.append([pid, *args])
             cur_p.history.append(args)
             if card is not None:
                 cur_p.played_cards.append(card)
-                if pid == my_pid:
-                    my_hand.remove(card)
+                if pid == self.my_pid:
+                    self.my_hand.remove(card)
             if meld is not None:
                 cur_p.melds.append(meld)
-                if pid == my_pid:
-                    [my_hand.remove(c) for c in meld.cards_from_self()]
+                if pid == self.my_pid:
+                    [self.my_hand.remove(c) for c in meld.cards_from_self()]
 
         if act == BUHUA:  # 补花
             cur_p.n_flowers += 1
-            history.append([pid, *args])
+            self.history.append([pid, *args])
         elif act == DRAW:  # 抽牌
-            history.append([pid, *args])
+            self.history.append([pid, *args])
         elif act == PLAY:  # 出牌
             play(card1)
         elif act == PENG:  # 碰
@@ -279,7 +285,7 @@ class GameState:
         elif act == GANG:  # 杠
             if card0:  # 直杠
                 meld = Meld(GANG, [card0] * 4, pid0, card0)
-            elif pid == my_pid:  # 己方暗杠
+            elif pid == self.my_pid:  # 己方暗杠
                 meld = Meld(GANG, [hidden_card] * 4, self.my_pid, hidden_card)
             else:  # 其他玩家暗杠
                 meld = Meld(GANG, None, None, None)
