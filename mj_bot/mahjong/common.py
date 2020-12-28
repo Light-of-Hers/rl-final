@@ -109,6 +109,8 @@ def encode_tile(tile):
 def tiles_to_plane(tiles):
     plane = np.zeros(136, dtype=int).reshape(-1, 4)
     for tile in tiles:
+        if tile[0] == 'H':
+            continue
         row = encode_tile(tile)
         for i in range(4):
             if plane[row][i] == 0:
@@ -222,14 +224,15 @@ class GameState:
                 req = 3, pid, GANG
                 hidden_card = cards[0]
             elif act == DRAW:
-                if cards[0][0] == 'H':  # 补花
+                if cards[0][0] == 'H' and records[idx + 1][1] == BUHUA:
                     idx += 1
-                    assert records[idx][1] == BUHUA
                     req = 3, pid, BUHUA, cards[0]
                 elif pid == self.my_pid:
                     req = 2, cards[0]
                 else:
                     req = 3, pid, DRAW
+            elif act == BUHUA:
+                req = 3, pid, BUHUA, cards[0]
             elif act == BUGANG:
                 req = 3, pid, BUGANG, cards[0]
             elif act == PLAY:
