@@ -8,6 +8,8 @@ from keras.layers import Conv2D, BatchNormalization, \
 from keras.models import Sequential
 from keras.optimizers import Adam
 
+from argparse import ArgumentParser
+
 matplotlib.use('Agg')
 
 # GPU设置
@@ -15,7 +17,7 @@ matplotlib.use('Agg')
 # assert len(gpu) == 1
 # tf.config.experimental.set_memory_growth(gpu[0], True)
 
-action = "discard"  # discard, chi or peng
+action = "play"  # discard, chi or peng
 batch_size = 32  # TODO batch的大小
 epochs_num = 20  # TODO epoch的大小
 
@@ -36,7 +38,7 @@ def generator(x, y, batch=batch_size):
 
 def load_data():
     # TODO
-    train_combined = np.load("../train_data/npz/play.npz")
+    train_combined = np.load("../train_data/npz/{}.npz".format(action))
 
     train_data = train_combined['data']
     train_label = train_combined['label']
@@ -56,7 +58,7 @@ def load_data():
 
 
 def load_extra_data():
-    train_combined = np.load("../pretrain/npz/play.npz")
+    train_combined = np.load("../pretrain/npz/{}.npz".format(action))
 
     train_data = train_combined['data']
     train_label = train_combined['label']
@@ -290,7 +292,21 @@ def train():
     del x_train, y_train, x_test, y_test
 
 
-pre_train()
-train()
+def get_cmd_args():
+    parser = ArgumentParser()
+    parser.add_argument("-a", "--action", default="play",
+                        choices=["play", "chi", "peng"])
+    return parser.parse_args()
+
+
+def main():
+    global action
+    cmd_args = get_cmd_args()
+    action = cmd_args.action
+    pre_train()
+    train()
+
 
 # X_train, Y_train, X_test, Y_test = load_data(one_hot = True)
+if __name__ == "__main__":
+    main()

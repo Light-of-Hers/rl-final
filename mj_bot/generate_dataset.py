@@ -1,5 +1,7 @@
 import random
 from argparse import ArgumentParser
+import os
+from contextlib import suppress
 
 import numpy as np
 
@@ -113,12 +115,30 @@ class DatasetGenerator:
             self._other_played = True
 
 
+def get_cmd_args():
+    parser = ArgumentParser()
+    parser.add_argument("-d", "--dir", type=str, default="../train_data",
+                        help="directory saving training data")
+    return parser.parse_args()
+
+
 def main():
     game_state = GameState()
     generator = DatasetGenerator()
-    path_raw = "./train_data/raw"  # 原始txt的文件夹位置
-    path_npz = "./train_data/npz"  # 生成的训练集存放的文件夹位置
+
+    cmd_args = get_cmd_args()
+    train_dir = cmd_args.dir
+
+    path_raw = os.path.join(train_dir, "raw")
     files = os.listdir(path_raw)
+
+    path_npz = os.path.join(train_dir, "npz")
+    with suppress(FileExistsError):
+        os.makedirs(path_npz)
+
+    path_play = os.path.join(path_npz, "play")
+    path_chi = os.path.join(path_npz, "chi")
+    path_peng = os.path.join(path_npz, "peng")
 
     play_data = list()
     play_label = list()
@@ -133,34 +153,34 @@ def main():
         # print(file)
         generator.reset()  # reset generator
         game_state.load_replay(
-            list(open(path_raw + "/" + file)),
+            list(open(os.path.join(path_raw, file))),
             generator.handle_state_and_action
         )
 
-        play_data.append(np.array(generator.play_data))
-        play_label.append(np.array(generator.play_label))
-        chi_data.append(np.array(generator.chi_data))
-        chi_label.append(np.array(generator.chi_label))
-        peng_data.append(np.array(generator.peng_data))
-        peng_label.append(np.array(generator.peng_label))
+        play_data.extend(generator.play_data)
+        play_label.extend(generator.play_label)
+        chi_data.extend(generator.chi_data)
+        chi_label.extend(generator.chi_label)
+        peng_data.extend(generator.peng_data)
+        peng_label.extend(generator.peng_label)
 
     print("saving play.npz ...")
     np.savez_compressed(
-        path_npz + "/play",
-        data=np.concatenate(play_data),
-        label=np.concatenate(play_label)
+        path_play,
+        data=np.array(play_data),
+        label=np.array(play_label)
     )
     print("saving chi.npz ...")
     np.savez_compressed(
-        path_npz + "/chi",
-        data=np.concatenate(chi_data),
-        label=np.concatenate(chi_label)
+        path_chi,
+        data=np.array(chi_data),
+        label=np.array(chi_label)
     )
     print("saving peng.npz ...")
     np.savez_compressed(
-        path_npz + "/peng",
-        data=np.concatenate(peng_data),
-        label=np.concatenate(peng_label)
+        path_peng,
+        data=np.array(peng_data),
+        label=np.array(peng_label)
     )
 
 
