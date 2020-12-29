@@ -121,6 +121,7 @@ def get_cmd_args():
     parser = ArgumentParser()
     parser.add_argument("-d", "--dir", type=str, default="../train_data",
                         help="directory saving training data")
+    parser.add_argument("-n", "--max-number", type=int, default=250000)
     return parser.parse_args()
 
 
@@ -130,6 +131,7 @@ def main():
 
     cmd_args = get_cmd_args()
     train_dir = cmd_args.dir
+    max_n = cmd_args.max_number
 
     path_raw = os.path.join(train_dir, "raw")
     files = os.listdir(path_raw)
@@ -152,7 +154,7 @@ def main():
     for i, file in enumerate(files):
         if i % 100 == 0:
             print("processing replay data: ", i)
-        if i >= 400000:
+        if i >= max_n:
             break
         if file == ".DS_Store":
             continue
