@@ -1,7 +1,6 @@
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-import tensorflow as tf
 import tensorflow.keras
 from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, EarlyStopping
 from keras.layers import Conv2D, BatchNormalization, \
@@ -12,11 +11,11 @@ from keras.optimizers import Adam
 matplotlib.use('Agg')
 
 # GPU设置
-gpu = tf.config.experimental.list_physical_devices(device_type='GPU')
-assert len(gpu) == 1
-tf.config.experimental.set_memory_growth(gpu[0], True)
+# gpu = tf.config.experimental.list_physical_devices(device_type='GPU')
+# assert len(gpu) == 1
+# tf.config.experimental.set_memory_growth(gpu[0], True)
 
-action = "discard"
+action = "discard"  # discard, chi or peng
 batch_size = 32  # TODO batch的大小
 epochs_num = 20  # TODO epoch的大小
 
@@ -35,13 +34,36 @@ def generator(x, y, batch=batch_size):
         yield np.array(x_train), np.array(y_train)
 
 
-def load_data(one_hot=False):
+def load_data():
     # TODO
+    train_combined = np.load("../train_data/npz/play.npz")
+
+    train_data = train_combined['data']
+    train_label = train_combined['label']
+
+    train_data = np.swapaxes(train_data, 1, 3)
+    train_data = np.swapaxes(train_data, 1, 2)
+
+    num_total = train_data.shape[0]
+    num_test = num_total // 8  # TODO train时测试数据占总数据的多少？
+    num_train = num_total - num_test
+    test_data = train_data[num_train:num_total]
+    test_label = train_label[num_train:num_total]
+    train_data = train_data[0:num_train]
+    train_label = train_label[0:num_train]
+
     return train_data, train_label, test_data, test_label
 
 
-def load_extra_data(one_hot=False):
-    # TODO
+def load_extra_data():
+    train_combined = np.load("../pretrain/npz/play.npz")
+
+    train_data = train_combined['data']
+    train_label = train_combined['label']
+
+    train_data = np.swapaxes(train_data, 1, 3)
+    train_data = np.swapaxes(train_data, 1, 2)
+
     return train_data, train_label
 
 
@@ -77,7 +99,7 @@ def my_model():
     else:
         assert False
     model.add(Activation('softmax'))
-    model.summary()  # 输出网络结构信息
+    # model.summary()  # 输出网络结构信息
 
     opt = tensorflow.keras.optimizers.Adam(lr=0.001)
     model.compile(loss='categorical_crossentropy', optimizer=opt,
@@ -92,21 +114,23 @@ def pre_train():
     # 多分类标签生成
     y_train = tensorflow.keras.utils.to_categorical(y_train)
     # 生成训练数据
-    x_train = x_train.astype('int')
+    x_train = x_train.astype('float32')
     print("x_train.shape:")
     print(x_train.shape)
-    print("\ny_train.shape:")
+    print("y_train.shape:")
     print(y_train.shape)
 
-    # TODO
-    x_test = x_train[aa:bb]
-    y_test = y_train[aa:bb]
-    x_pretrain = x_train[0:cc]
-    y_pretrain = y_train[0:cc]
+    num_total = x_train.shape[0]
+    num_test = num_total // 6  # TODO pretrain时测试数据占总数据的多少？
+    num_train = num_total - num_test
+    x_test = x_train[num_train:num_total]
+    y_test = y_train[num_train:num_total]
+    x_pretrain = x_train[0:num_train]
+    y_pretrain = y_train[0:num_train]
 
     # 生成训练数据
-    x_pretrain = x_pretrain.astype('int')
-    x_test = x_test.astype('int')
+    x_pretrain = x_pretrain.astype('float32')
+    x_test = x_test.astype('float32')
     print("Shapes below:")
     print("x_pretrain.shape:", x_pretrain.shape)
     print("y_pretrain.shape:", y_pretrain.shape)
@@ -117,16 +141,14 @@ def pre_train():
 
     ############################################################################
 
-    num_val = 30000
-    num_train = 500000
-
-    # 保存的方式，3世代保存一次
+    # 保存的方式
     checkpoint_period1 = ModelCheckpoint(
-        "./models" + 'ep{epoch:03d}-loss{loss:.3f}-val_loss{val_loss:.3f}.h5',
+        "./models" + 'ep{epoch:03d}'
+        # '-loss{loss:.3f}-val_loss{val_loss:.3f}'
+                     '.h5',
         monitor='val_accuracy',
         save_weights_only=False,
-        save_best_only=True,
-        period=3
+        save_best_only=True
     )
     # 学习率下降的方式，acc三次不下降就下降学习率继续训练
     reduce_lr = ReduceLROnPlateau(
@@ -144,15 +166,17 @@ def pre_train():
     )
 
     # 交叉熵
-    model.compile(loss='categorical_crossentropy',
-                  optimizer=Adam(lr=1e-3),
-                  metrics=['accuracy'])
+    model.compile(
+        loss='categorical_crossentropy',
+        optimizer=Adam(lr=1e-3),
+        metrics=['accuracy']
+    )
 
-    hist = model.fit_generator(
+    hist = model.fit(
         generator(x_pretrain[:num_train], y_pretrain[:num_train], batch_size),
         steps_per_epoch=max(1, num_train // batch_size),
         validation_data=generator(x_test, y_test, batch_size),
-        validation_steps=max(1, num_val // batch_size),
+        validation_steps=max(1, num_test // batch_size),
         epochs=epochs_num,
         initial_epoch=0,
         callbacks=[checkpoint_period1, reduce_lr, early_stopping]
@@ -162,11 +186,11 @@ def pre_train():
 
     # 保存模型和训练结果
 
-    model.save('./model_pretrain.hdf5')
-    model.save_weights('./model_weight_pretrain.hdf5')
+    model.save('./' + action + '_model_pretrain.hdf5')
+    model.save_weights('./' + action + '_model_weight_pretrain.hdf5')
     print('testing')
     model.evaluate(x=x_test, y=y_test, batch_size=batch_size, verbose=2)
-
+    print("$")
     # 输出模型结构
     print(model.summary())
 
@@ -210,8 +234,6 @@ def train():
     # 生成训练数据
     x_train = x_train.astype('float32')
     x_test = x_test.astype('float32')
-    x_train /= 255
-    x_test /= 255
     print(x_train.shape)
     print(y_train.shape)
     print(x_test.shape)
@@ -219,7 +241,7 @@ def train():
 
     model = my_model()
 
-    model.load_weights('./xxx')  # TODO
+    model.load_weights('./model_weight_pretrain.hdf5')
     # hist = model.fit_generator(
     #     train_datagan.flow(x_train, y_train, batch_size=batch_size),
     #     steps_per_epoch=x_train.shape[0] // batch_size,
@@ -231,8 +253,8 @@ def train():
                      validation_data=(x_test, y_test), shuffle=True)
 
     # 保存模型和训练结果
-    model.save('./model1.0.hdf5')
-    model.save_weights('./model_weight1.0.hdf5')
+    model.save('./' + action + '_model1.0.hdf5')
+    model.save_weights('./' + action + '_model_weight1.0.hdf5')
     print('testing')
     model.evaluate(x=x_test, y=y_test, batch_size=batch_size, verbose=2)
 
