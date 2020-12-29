@@ -188,8 +188,8 @@ def pre_train():
 
     # 保存模型和训练结果
 
-    model.save('./' + action + '_model_pretrain.hdf5')
-    model.save_weights('./' + action + '_model_weight_pretrain.hdf5')
+    model.save('./{}_model_pretrain.hdf5'.format(action))
+    model.save_weights('./{}_model_weight_pretrain.hdf5'.format(action))
     print('testing')
     model.evaluate(x=x_test, y=y_test, batch_size=batch_size, verbose=2)
     print("$")
@@ -243,7 +243,7 @@ def train():
 
     model = my_model()
 
-    model.load_weights('./model_weight_pretrain.hdf5')
+    model.load_weights('./{}_model_weight_pretrain.hdf5'.format(action))
     # hist = model.fit_generator(
     #     train_datagan.flow(x_train, y_train, batch_size=batch_size),
     #     steps_per_epoch=x_train.shape[0] // batch_size,
@@ -255,8 +255,8 @@ def train():
                      validation_data=(x_test, y_test), shuffle=True)
 
     # 保存模型和训练结果
-    model.save('./' + action + '_model1.0.hdf5')
-    model.save_weights('./' + action + '_model_weight1.0.hdf5')
+    model.save('./{}_model1.0.hdf5'.format(action))
+    model.save_weights('./{}_model_weight1.0.hdf5'.format(action))
     print('testing')
     model.evaluate(x=x_test, y=y_test, batch_size=batch_size, verbose=2)
 
