@@ -152,6 +152,8 @@ def main():
     for i, file in enumerate(files):
         if i % 100 == 0:
             print("processing replay data: ", i)
+        if i >= 400000:
+            break
         if file == ".DS_Store":
             continue
         # print(file)
@@ -169,7 +171,8 @@ def main():
             peng_data.extend(generator.peng_data)
             peng_label.extend(generator.peng_label)
         except Exception:
-            print_exc()
+            with open("./gen-dataset-error.log", "a") as fp:
+                print_exc(file=fp)
 
     print("saving play.npz ...")
     np.savez_compressed(
