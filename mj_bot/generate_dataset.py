@@ -116,17 +116,52 @@ class DatasetGenerator:
 def main():
     game_state = GameState()
     generator = DatasetGenerator()
-    for i in range(3):
+    path_raw = "./train_data/raw"  # 原始txt的文件夹位置
+    path_npz = "./train_data/npz"  # 生成的训练集存放的文件夹位置
+    files = os.listdir(path_raw)
+
+    play_data = list()
+    play_label = list()
+    chi_data = list()
+    chi_label = list()
+    peng_data = list()
+    peng_label = list()
+
+    for file in files:
+        if file == ".DS_Store":
+            continue
+        # print(file)
         generator.reset()  # reset generator
         game_state.load_replay(
-            list(open(f"../data/sample{i + 1}.txt")), generator.handle_state_and_action)
+            list(open(path_raw + "/" + file)),
+            generator.handle_state_and_action
+        )
 
-        print(generator.play_data)
-        print(generator.play_label)
-        print(generator.chi_data)
-        print(generator.chi_label)
-        print(generator.peng_data)
-        print(generator.peng_label)
+        play_data.append(np.array(generator.play_data))
+        play_label.append(np.array(generator.play_label))
+        chi_data.append(np.array(generator.chi_data))
+        chi_label.append(np.array(generator.chi_label))
+        peng_data.append(np.array(generator.peng_data))
+        peng_label.append(np.array(generator.peng_label))
+
+    print("saving play.npz ...")
+    np.savez_compressed(
+        path_npz + "/play",
+        data=np.concatenate(play_data),
+        label=np.concatenate(play_label)
+    )
+    print("saving chi.npz ...")
+    np.savez_compressed(
+        path_npz + "/chi",
+        data=np.concatenate(chi_data),
+        label=np.concatenate(chi_label)
+    )
+    print("saving peng.npz ...")
+    np.savez_compressed(
+        path_npz + "/peng",
+        data=np.concatenate(peng_data),
+        label=np.concatenate(peng_label)
+    )
 
 
 if __name__ == "__main__":
