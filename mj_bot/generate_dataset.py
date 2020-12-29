@@ -20,7 +20,7 @@ class DatasetGenerator:
         self.peng_label = []
         self.chi_data = []
         self.chi_label = []
-        self._history = [np.zeros((9, 34, 4)) for _ in range(7)]
+        self._history = [np.zeros((9, 34, 4), dtype="int8") for _ in range(7)]
         self._other_played = False
 
     def reset(self):
@@ -182,18 +182,24 @@ def main():
         data=np.array(play_data),
         label=np.array(play_label)
     )
+    play_data.clear()
+    play_label.clear()
     print("saving chi.npz ...")
     np.savez_compressed(
         path_chi,
         data=np.array(chi_data),
         label=np.array(chi_label)
     )
+    chi_data.clear()
+    chi_label.clear()
     print("saving peng.npz ...")
     np.savez_compressed(
         path_peng,
         data=np.array(peng_data),
         label=np.array(peng_label)
     )
+    peng_data.clear()
+    peng_label.clear()
 
 
 if __name__ == "__main__":

@@ -7,15 +7,18 @@ from keras.layers import Conv2D, BatchNormalization, \
     Dense, Dropout, Activation, Flatten
 from keras.models import Sequential
 from keras.optimizers import Adam
+import tensorflow as tf
 
 from argparse import ArgumentParser
 
 matplotlib.use('Agg')
 
 # GPU设置
-# gpu = tf.config.experimental.list_physical_devices(device_type='GPU')
-# assert len(gpu) == 1
-# tf.config.experimental.set_memory_growth(gpu[0], True)
+gpus = tf.config.experimental.list_physical_devices(device_type='GPU')
+if len(gpus) > 1:
+    gpus = gpus[:len(gpus) // 2]
+tf.config.experimental.set_visible_devices(devices=gpus, device_type='GPU')
+[tf.config.experimental.set_memory_growth(gpu, True) for gpu in gpus]
 
 action = "play"  # discard, chi or peng
 batch_size = 32  # TODO batch的大小
@@ -92,7 +95,7 @@ def my_model():
     model.add(Dense(300))
     model.add(Activation('relu'))
 
-    if action == "discard":
+    if action == "play":
         model.add(Dense(34))  # 判断出什么牌
     elif action == "peng":
         model.add(Dense(2))  # 判断碰还是不碰
@@ -304,7 +307,7 @@ def main():
     cmd_args = get_cmd_args()
     action = cmd_args.action
     pre_train()
-    train()
+    # train()
 
 
 # X_train, Y_train, X_test, Y_test = load_data(one_hot = True)

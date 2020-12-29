@@ -414,10 +414,10 @@ class GameState:
         my_pid = self.my_pid
         players = self.players
         encoded_state = np.concatenate((
-            np.array([tiles_to_plane(self.my_hand)]),
-            *(np.array([tiles_to_plane(players[(my_pid + i) % 4].played_cards)])
+            np.array([tiles_to_plane(self.my_hand)], dtype="int8"),
+            *(np.array([tiles_to_plane(players[(my_pid + i) % 4].played_cards)], dtype="int8")
               for i in range(4)),
-            *(np.array([melds_to_plane(players[(my_pid + i) % 4].melds)])
+            *(np.array([melds_to_plane(players[(my_pid + i) % 4].melds)], dtype="int8")
               for i in range(4)),
         ))
         return encoded_state

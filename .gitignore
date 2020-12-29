@@ -9,3 +9,6 @@ build/
 dist/
 train_data/
 pretrain/
+*.h5
+*.hdf5
+*.png
