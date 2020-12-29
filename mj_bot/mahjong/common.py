@@ -273,7 +273,6 @@ class GameState:
             if meld is not None:
                 cur_p.melds.append(meld)
                 if pid == self.my_pid:
-                    print(meld.cards_from_self())
                     [self.my_hand.remove(c) for c in meld.cards_from_self()]
 
         stop = False

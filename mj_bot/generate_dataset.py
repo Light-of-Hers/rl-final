@@ -42,9 +42,9 @@ class DatasetGenerator:
             if pid != my_pid:
                 space = game_state.action_space()
                 can_peng = next(
-                    (act[0] == PENG for act in space), None) is not None
+                    (act for act in space if act[0] == PENG), None) is not None
                 can_chi = next(
-                    (act[0] == CHI for act in space), None) is not None
+                    (act for act in space if act[0] == CHI), None) is not None
                 if can_peng or can_chi:
                     cur_data = self._push_state(game_state)
                     # 仅在可以吃/碰的情况下考虑不吃/不碰
@@ -56,7 +56,7 @@ class DatasetGenerator:
                         self.chi_label.append(self._scalars[0])
 
         if pid == my_pid:
-            
+
             if action[0] == PLAY:
                 cur_data = self._push_state(game_state)
                 tile_code = encode_tile(action[-1])
