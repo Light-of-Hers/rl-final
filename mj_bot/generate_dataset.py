@@ -2,6 +2,8 @@ import random
 from argparse import ArgumentParser
 import os
 from contextlib import suppress
+from traceback import print_exc
+import sys
 
 import numpy as np
 
@@ -147,22 +149,27 @@ def main():
     peng_data = list()
     peng_label = list()
 
-    for file in files:
+    for i, file in enumerate(files):
+        if i % 100 == 0:
+            print("processing replay data: ", i)
         if file == ".DS_Store":
             continue
         # print(file)
         generator.reset()  # reset generator
-        game_state.load_replay(
-            list(open(os.path.join(path_raw, file))),
-            generator.handle_state_and_action
-        )
+        try:
+            game_state.load_replay(
+                list(open(os.path.join(path_raw, file))),
+                generator.handle_state_and_action
+            )
 
-        play_data.extend(generator.play_data)
-        play_label.extend(generator.play_label)
-        chi_data.extend(generator.chi_data)
-        chi_label.extend(generator.chi_label)
-        peng_data.extend(generator.peng_data)
-        peng_label.extend(generator.peng_label)
+            play_data.extend(generator.play_data)
+            play_label.extend(generator.play_label)
+            chi_data.extend(generator.chi_data)
+            chi_label.extend(generator.chi_label)
+            peng_data.extend(generator.peng_data)
+            peng_label.extend(generator.peng_label)
+        except Exception:
+            print_exc()
 
     print("saving play.npz ...")
     np.savez_compressed(
