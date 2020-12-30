@@ -13,12 +13,15 @@ from argparse import ArgumentParser
 
 matplotlib.use('Agg')
 
-# GPU设置
-gpus = tf.config.experimental.list_physical_devices(device_type='GPU')
-if len(gpus) > 1:
-    gpus = gpus[:len(gpus) // 2]
-tf.config.experimental.set_visible_devices(devices=gpus, device_type='GPU')
-[tf.config.experimental.set_memory_growth(gpu, True) for gpu in gpus]
+
+def setup_gpu(gpu_ids):
+    # GPU设置
+    gpus = tf.config.experimental.list_physical_devices(
+        device_type='GPU')
+    gpus = [gpus[i] for i in gpu_ids if 0 <= i < len(gpus)]
+    tf.config.experimental.set_visible_devices(devices=gpus, device_type='GPU')
+    [tf.config.experimental.set_memory_growth(gpu, True) for gpu in gpus]
+
 
 action = "play"  # discard, chi or peng
 batch_size = 32  # TODO batch的大小
@@ -299,6 +302,8 @@ def get_cmd_args():
     parser = ArgumentParser()
     parser.add_argument("-a", "--action", default="play",
                         choices=["play", "chi", "peng"])
+    parser.add_argument("-g", "--gpus", nargs="*",
+                        default=[0, 1, 2, 3], type=int)
     return parser.parse_args()
 
 
@@ -306,6 +311,7 @@ def main():
     global action
     cmd_args = get_cmd_args()
     action = cmd_args.action
+    setup_gpu(cmd_args.gpus)
     pre_train()
     # train()
 
