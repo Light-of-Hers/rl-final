@@ -23,7 +23,7 @@ def setup_gpu(gpu_ids):
     [tf.config.experimental.set_memory_growth(gpu, True) for gpu in gpus]
 
 
-action = "play"  # discard, chi or peng
+action = "play"  # play, chi or peng
 batch_size = 32  # TODO batch的大小
 epochs_num = 20  # TODO epoch的大小
 
@@ -240,8 +240,8 @@ def train():
     y_train = tensorflow.keras.utils.to_categorical(y_train)
     y_test = tensorflow.keras.utils.to_categorical(y_test)
     # 生成训练数据
-    x_train = x_train.astype('float32')
-    x_test = x_test.astype('float32')
+    x_train = x_train.astype('int8')
+    x_test = x_test.astype('int8')
     print(x_train.shape)
     print(y_train.shape)
     print(x_test.shape)
@@ -261,8 +261,8 @@ def train():
                      validation_data=(x_test, y_test), shuffle=True)
 
     # 保存模型和训练结果
-    model.save('./{}_model1.0.hdf5'.format(action))
-    model.save_weights('./{}_model_weight1.0.hdf5'.format(action))
+    model.save('./{}_model2.0.hdf5'.format(action))
+    model.save_weights('./{}_model_weight2.0.hdf5'.format(action))
     print('testing')
     model.evaluate(x=x_test, y=y_test, batch_size=batch_size, verbose=2)
 
@@ -287,13 +287,13 @@ def train():
     plt.plot(epochs, val_acc, 'r', label='Validation acc')
     plt.title('Training and validation accuracy')
     plt.legend()
-    plt.savefig("accuracy.png")
+    plt.savefig("{}_accuracy.png".format(action))
     plt.figure()  # 新建一个图
     plt.plot(epochs, train_loss, 'bo', label='Training loss')
     plt.plot(epochs, val_loss, 'r', label='Validation loss')
     plt.title('Training and validation loss')
     plt.legend()
-    plt.savefig("loss.png")
+    plt.savefig("{}_loss.png".format(action))
 
     del x_train, y_train, x_test, y_test
 
@@ -304,6 +304,8 @@ def get_cmd_args():
                         choices=["play", "chi", "peng"])
     parser.add_argument("-g", "--gpus", nargs="*",
                         default=[0, 1, 2, 3], type=int)
+    parser.add_argument("--train", action="store_true")
+    parser.add_argument("--pretrain", action="store_true")
     return parser.parse_args()
 
 
@@ -312,8 +314,10 @@ def main():
     cmd_args = get_cmd_args()
     action = cmd_args.action
     setup_gpu(cmd_args.gpus)
-    pre_train()
-    # train()
+    if cmd_args.pretrain:
+        pre_train()
+    if cmd_args.train:
+        train()
 
 
 # X_train, Y_train, X_test, Y_test = load_data(one_hot = True)
