@@ -95,7 +95,7 @@ def encode_tile(tile):
     elif tile[0] == 'T':
         row = int(tile[1]) + 8  # 9-17是条
     elif tile[0] == 'B':
-        row = int(tile[1]) + 17  # 18-26是筒
+        row = int(tile[1]) + 17  # 18-26是饼
     elif tile[0] == 'F':
         row = int(tile[1]) + 26  # 27-30分别是东南西北
     elif tile[0] == 'J':
@@ -103,6 +103,22 @@ def encode_tile(tile):
     else:
         assert False, tile
     return row
+
+
+def decode_tile(code: int):
+    if 0 <= code <= 8:
+        tile = 'W' + str(code + 1)
+    elif 9 <= code <= 17:
+        tile = 'T' + str(code - 8)
+    elif 18 <= code <= 26:
+        tile = 'B' + str(code - 17)
+    elif 27 <= code <= 30:
+        tile = 'F' + str(code - 26)
+    elif 31 <= code <= 33:
+        tile = 'J' + str(code - 30)
+    else:
+        assert False, code
+    return tile
 
 
 # 将手牌转换成34×4的二维数组
