@@ -2,12 +2,9 @@ import random
 
 import numpy as np
 import tensorflow.keras
-from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, EarlyStopping
 from keras.layers import Conv2D, BatchNormalization, \
     Dense, Dropout, Activation, Flatten
 from keras.models import Sequential
-from keras.optimizers import Adam
-import tensorflow as tf
 
 from ..common import *
 
@@ -76,7 +73,7 @@ class CNNTactic:
         data = np.concatenate(self._history)
         data = np.swapaxes(data, 0, 2)
         data = np.swapaxes(data, 0, 1)
-        return data
+        return np.array([data])
 
     def _load_model(self, action):
         if action not in self._model:
@@ -84,6 +81,13 @@ class CNNTactic:
             model.load_weights(self._weight_path[action])
             self._model[action] = model
         return self._model[action]
+
+    def _predict(self, action, input_data):
+        model = self._load_model(action)
+        res = model.predict(input_data)
+        res = sorted(list(enumerate(res[0])), key=lambda t: t[1], reverse=True)
+        res = [i for (i, _) in res]
+        return res
 
     def loading(self, game_state: GameState, pid: int, action: tuple):
         if action[0] in (DRAW, BUHUA):
@@ -154,25 +158,28 @@ class CNNTactic:
             return HU,
 
         if next((act for act in space if act[0] == PLAY), None) is not None:
-            play_model = self._load_model("play")
             input_data = self._get_cur_data()
-            code = int(play_model.predict(input_data))
-            tile = decode_tile(code)
-
-            act = PLAY, tile
-            if act in space:
-                return act
+            for i, code in enumerate(self._predict("play", input_data)):
+                tile = decode_tile(code)
+                act = PLAY, tile
+                if act in space:
+                    game_state.log(f"paly-predicting valid at iter {i}: {act}")
+                    return act
 
         if next((act for act in space if act[0] == CHI), None) is not None:
-            chi_model = self._load_model("chi")
             input_data = self._get_cur_data()
-            rel_pos = int(chi_model.predict(input_data))
+            for i, rel_pos in enumerate(self._predict("chi", input_data)):
+                if rel_pos == 0:
+                    break
 
-            if rel_pos > 0:
                 src_pid = game_state.history[-1][0]
                 src_card = game_state.history[-1][-1]
                 mid_card_n = card_number(src_card) - rel_pos + 2
                 mid_card = card_type(src_card) + str(mid_card_n)
+
+                if next((act for act in space if act[0] == CHI
+                         and act[1] == mid_card), None) is None:
+                    continue
 
                 meld = Meld(CHI, make_card_seq(mid_card), src_pid, src_card)
                 with game_state.save_peng_chi_state():
@@ -181,20 +188,20 @@ class CNNTactic:
                     game_state.players[my_pid].melds.append(meld)
                     input_data = self._push_state(game_state)
 
-                play_model = self._load_model("play")
-                code = int(play_model.predict(input_data))
-                tile = decode_tile(code)
-
-                act = CHI, mid_card, tile
-                if act in space:
-                    return act
+                for j, code in enumerate(self._predict("play", input_data)):
+                    tile = decode_tile(code)
+                    act = CHI, mid_card, tile
+                    if act in space:
+                        game_state.log(
+                            f"chi-predicting valid at iter ({i}, {j}): {act}")
+                        return act
 
         if next((act for act in space if act[0] == PENG), None) is not None:
-            peng_model = self._load_model("peng")
             input_data = self._get_cur_data()
-            do_peng = int(peng_model.predict(input_data))
+            for i, do_peng in enumerate(self._predict("peng", input_data)):
+                if do_peng == 0:
+                    break
 
-            if do_peng:
                 src_pid = game_state.history[-1][0]
                 src_card = game_state.history[-1][-1]
                 meld = Meld(PENG, [src_card] * 3, src_pid, src_card)
@@ -204,13 +211,13 @@ class CNNTactic:
                     game_state.players[my_pid].melds.append(meld)
                     input_data = self._push_state(game_state)
 
-                play_model = self._load_model("play")
-                code = int(play_model.predict(input_data))
-                tile = decode_tile(code)
-
-                act = PENG, tile
-                if act in space:
-                    return act
+                for j, code in enumerate(self._predict("play", input_data)):
+                    tile = decode_tile(code)
+                    act = PENG, tile
+                    if act in space:
+                        game_state.log(
+                            f"peng-predicting valid at iter ({i}, {j}): {act}")
+                        return act
 
         # TODO model_input: 63 × 34 × 4，和训练输入一样
         # 当可以出牌时调用 play_action = play_model.predict(model_input)

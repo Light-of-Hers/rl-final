@@ -17,6 +17,8 @@ def main():
         assert isinstance(action, (list, tuple))
         action = " ".join(str(x) for x in action)
 
+    game_state.log(action)
+
     output_json = json.dumps({
         "response": action,
         "debug": game_state.debug_msgs,
