@@ -11,6 +11,8 @@ import tensorflow as tf
 
 from argparse import ArgumentParser
 
+from mahjong.tactic.cnn import cnn_model
+
 matplotlib.use('Agg')
 
 
@@ -75,47 +77,6 @@ def load_extra_data():
     return train_data, train_label
 
 
-def my_model(action):
-    model = Sequential()
-
-    # （1个手牌，4个出的牌，4个吃碰杠的牌）×过去7手
-    model.add(Conv2D(100, (5, 2), input_shape=(34, 4, 63)))
-    model.add(Activation('relu'))
-    model.add(BatchNormalization())
-    model.add(Dropout(0.5))
-
-    model.add(Conv2D(100, (5, 2)))
-    model.add(Activation('relu'))
-    model.add(BatchNormalization())
-    model.add(Dropout(0.5))
-
-    model.add(Conv2D(100, (5, 2)))
-    model.add(Activation('relu'))
-    model.add(BatchNormalization())
-    model.add(Dropout(0.5))
-
-    model.add(Flatten())
-    model.add(Dense(300))
-    model.add(Activation('relu'))
-
-    if action == "play":
-        model.add(Dense(34))  # 判断出什么牌
-    elif action == "peng":
-        model.add(Dense(2))  # 判断碰还是不碰
-    elif action == "chi":
-        model.add(Dense(4))  # 判断不吃，吃左边、中间、右边
-    else:
-        assert False
-    model.add(Activation('softmax'))
-    # model.summary()  # 输出网络结构信息
-
-    opt = tensorflow.keras.optimizers.Adam(lr=0.001)
-    model.compile(loss='categorical_crossentropy', optimizer=opt,
-                  metrics=['accuracy'])
-
-    return model
-
-
 def pre_train():
     x_train, y_train = load_extra_data()
 
@@ -145,7 +106,7 @@ def pre_train():
     print("x_test.shape:", x_test.shape)
     print("y_test.shape:", y_test.shape)
 
-    model = my_model(ACTION)
+    model = cnn_model(ACTION, train=True)
 
     ############################################################################
 
@@ -247,7 +208,7 @@ def train():
     print(x_test.shape)
     print(y_test.shape)
 
-    model = my_model(ACTION)
+    model = cnn_model(ACTION, train=True)
 
     model.load_weights('./{}_model_weight_pretrain.hdf5'.format(ACTION))
     # hist = model.fit_generator(

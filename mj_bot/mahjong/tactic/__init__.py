@@ -1,1 +1,2 @@
-from .rand import random_tactic
+from .rand import RandomTactic
+from .cnn import CNNTactic

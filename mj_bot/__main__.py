@@ -1,15 +1,16 @@
 from mahjong.common import GameState
-from mahjong.tactic import random_tactic
+from mahjong.tactic import RandomTactic, CNNTactic
 import json
 import sys
 
 
 def main():
-    tactic = random_tactic
+    tactic = CNNTactic()
     game_state = GameState()
 
     input_json = json.loads(input())
-    game_state.load_json(input_json)
+    game_state.load_json(
+        input_json, tactic.loading if hasattr(tactic, "loading") else None)
 
     action = tactic(game_state)
     if not isinstance(action, str):
