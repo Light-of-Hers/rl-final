@@ -23,12 +23,12 @@ def setup_gpu(gpu_ids):
     [tf.config.experimental.set_memory_growth(gpu, True) for gpu in gpus]
 
 
-action = "play"  # play, chi or peng
-batch_size = 32  # TODO batch的大小
-epochs_num = 20  # TODO epoch的大小
+ACTION = "play"  # play, chi or peng
+BATCH_SIZE = 32  # TODO batch的大小
+EPOCHS_NUM = 20  # TODO epoch的大小
 
 
-def generator(x, y, batch=batch_size):
+def generator(x, y, batch=BATCH_SIZE):
     n = len(x)
     i = 0
     while 1:
@@ -44,7 +44,7 @@ def generator(x, y, batch=batch_size):
 
 def load_data():
     # TODO
-    train_combined = np.load("../train_data/npz/{}.npz".format(action))
+    train_combined = np.load("../train_data/npz/{}.npz".format(ACTION))
 
     train_data = train_combined['data']
     train_label = train_combined['label']
@@ -64,7 +64,7 @@ def load_data():
 
 
 def load_extra_data():
-    train_combined = np.load("../pretrain/npz/{}.npz".format(action))
+    train_combined = np.load("../pretrain/npz/{}.npz".format(ACTION))
 
     train_data = train_combined['data']
     train_label = train_combined['label']
@@ -75,7 +75,7 @@ def load_extra_data():
     return train_data, train_label
 
 
-def my_model():
+def my_model(action):
     model = Sequential()
 
     # （1个手牌，4个出的牌，4个吃碰杠的牌）×过去7手
@@ -145,7 +145,7 @@ def pre_train():
     print("x_test.shape:", x_test.shape)
     print("y_test.shape:", y_test.shape)
 
-    model = my_model()
+    model = my_model(ACTION)
 
     ############################################################################
 
@@ -181,11 +181,11 @@ def pre_train():
     )
 
     hist = model.fit(
-        generator(x_pretrain[:num_train], y_pretrain[:num_train], batch_size),
-        steps_per_epoch=max(1, num_train // batch_size),
-        validation_data=generator(x_test, y_test, batch_size),
-        validation_steps=max(1, num_test // batch_size),
-        epochs=epochs_num,
+        generator(x_pretrain[:num_train], y_pretrain[:num_train], BATCH_SIZE),
+        steps_per_epoch=max(1, num_train // BATCH_SIZE),
+        validation_data=generator(x_test, y_test, BATCH_SIZE),
+        validation_steps=max(1, num_test // BATCH_SIZE),
+        epochs=EPOCHS_NUM,
         initial_epoch=0,
         callbacks=[checkpoint_period1, reduce_lr, early_stopping]
     )
@@ -194,10 +194,10 @@ def pre_train():
 
     # 保存模型和训练结果
 
-    model.save('./{}_model_pretrain.hdf5'.format(action))
-    model.save_weights('./{}_model_weight_pretrain.hdf5'.format(action))
+    model.save('./{}_model_pretrain.hdf5'.format(ACTION))
+    model.save_weights('./{}_model_weight_pretrain.hdf5'.format(ACTION))
     print('testing')
-    model.evaluate(x=x_test, y=y_test, batch_size=batch_size, verbose=2)
+    model.evaluate(x=x_test, y=y_test, batch_size=BATCH_SIZE, verbose=2)
     print("$")
     # 输出模型结构
     print(model.summary())
@@ -247,9 +247,9 @@ def train():
     print(x_test.shape)
     print(y_test.shape)
 
-    model = my_model()
+    model = my_model(ACTION)
 
-    model.load_weights('./{}_model_weight_pretrain.hdf5'.format(action))
+    model.load_weights('./{}_model_weight_pretrain.hdf5'.format(ACTION))
     # hist = model.fit_generator(
     #     train_datagan.flow(x_train, y_train, batch_size=batch_size),
     #     steps_per_epoch=x_train.shape[0] // batch_size,
@@ -257,14 +257,14 @@ def train():
     #     validation_data=(x_test, y_test),
     #     shuffle=True
     # )
-    hist = model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs_num,
+    hist = model.fit(x_train, y_train, batch_size=BATCH_SIZE, epochs=EPOCHS_NUM,
                      validation_data=(x_test, y_test), shuffle=True)
 
     # 保存模型和训练结果
-    model.save('./{}_model2.0.hdf5'.format(action))
-    model.save_weights('./{}_model_weight2.0.hdf5'.format(action))
+    model.save('./{}_model2.0.hdf5'.format(ACTION))
+    model.save_weights('./{}_model_weight2.0.hdf5'.format(ACTION))
     print('testing')
-    model.evaluate(x=x_test, y=y_test, batch_size=batch_size, verbose=2)
+    model.evaluate(x=x_test, y=y_test, batch_size=BATCH_SIZE, verbose=2)
 
     # 输出模型结构
     print(model.summary())
@@ -287,13 +287,13 @@ def train():
     plt.plot(epochs, val_acc, 'r', label='Validation acc')
     plt.title('Training and validation accuracy')
     plt.legend()
-    plt.savefig("{}_accuracy.png".format(action))
+    plt.savefig("{}_accuracy.png".format(ACTION))
     plt.figure()  # 新建一个图
     plt.plot(epochs, train_loss, 'bo', label='Training loss')
     plt.plot(epochs, val_loss, 'r', label='Validation loss')
     plt.title('Training and validation loss')
     plt.legend()
-    plt.savefig("{}_loss.png".format(action))
+    plt.savefig("{}_loss.png".format(ACTION))
 
     del x_train, y_train, x_test, y_test
 
@@ -310,9 +310,9 @@ def get_cmd_args():
 
 
 def main():
-    global action
+    global ACTION
     cmd_args = get_cmd_args()
-    action = cmd_args.action
+    ACTION = cmd_args.action
     setup_gpu(cmd_args.gpus)
     if cmd_args.pretrain:
         pre_train()
@@ -320,6 +320,5 @@ def main():
         train()
 
 
-# X_train, Y_train, X_test, Y_test = load_data(one_hot = True)
 if __name__ == "__main__":
     main()
