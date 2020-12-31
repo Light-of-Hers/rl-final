@@ -192,6 +192,7 @@ class GameState:
         self.players: List[Player] = []
         self.callback = None
         self.debug_msgs = []
+        self.n_left_cards = 34
 
     def log(self, msg):
         self.debug_msgs.append(str(msg))
@@ -212,6 +213,7 @@ class GameState:
         self.history = []
         self.players = [Player(i) for i in range(4)]
         self.callback = callback
+        self.n_left_cards = 34
 
     def load_replay(self, replay_lines, callback=None):
         if isinstance(replay_lines, str):
@@ -349,6 +351,7 @@ class GameState:
         elif code == 2:  # 己方抽卡
             self.my_hand.append(args[0])
             self.history.append([self.my_pid, DRAW])
+            self.n_left_cards -= 1
         elif code == 3:  # 行牌
             stop = self._handle_play(int(args[0]), args[1:], hidden_card)
 
@@ -416,7 +419,7 @@ class GameState:
                 self.my_hand.count(c) >= 4)
             # 自摸胡牌
             n_fan = self.calculate_fan(
-                self.my_hand[-1], is_ZIMO=True, hand=self.my_hand[:-1])
+                self.my_hand[-1], is_ZIMO=True, hand=self.my_hand[:-1], is_last=self.n_left_cards == 0)
             try_to_hu(n_fan)
         elif act0 in (PLAY, PENG, CHI) and pid0 != self.my_pid:
             card0 = prev_turn[-1]
