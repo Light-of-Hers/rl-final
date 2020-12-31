@@ -180,6 +180,7 @@ class Player:
         self.n_flowers: int = 0
         self.history: List[list] = []
         self.played_cards: List[str] = []
+        self.n_left_cards = 34 - 13
 
 
 class GameState:
@@ -192,7 +193,6 @@ class GameState:
         self.players: List[Player] = []
         self.callback = None
         self.debug_msgs = []
-        self.n_left_cards = 34
 
     def log(self, msg):
         self.debug_msgs.append(str(msg))
@@ -310,6 +310,7 @@ class GameState:
             self.history.append([pid, *args])
         elif act == DRAW:  # 抽牌
             self.history.append([pid, *args])
+            cur_p.n_left_cards -= 1
         elif act == PLAY:  # 出牌
             play(card1)
         elif act == PENG:  # 碰
@@ -351,7 +352,7 @@ class GameState:
         elif code == 2:  # 己方抽卡
             self.my_hand.append(args[0])
             self.history.append([self.my_pid, DRAW])
-            self.n_left_cards -= 1
+            self.players[self.my_pid].n_left_cards -= 1
         elif code == 3:  # 行牌
             stop = self._handle_play(int(args[0]), args[1:], hidden_card)
 
@@ -391,6 +392,9 @@ class GameState:
             self.log(f"{pack}, {hand}, {win_tile}")
             return 0
         return sum(v for (v, d) in res)
+
+    def next_player_cannot_draw(self):
+        return self.players[(self.my_pid + 1) % 4].n_left_cards == 0
 
     def action_space(self):
         if len(self.history) <= 0:
@@ -439,6 +443,8 @@ class GameState:
             space.append((PASS,))
         else:
             space.append((PASS,))
+        if self.next_player_cannot_draw():
+            space = [act for act in space if act[0] not in (GANG, BUGANG)]
         return space
 
     def encode(self):
