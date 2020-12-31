@@ -377,6 +377,8 @@ class GameState:
         hand = tuple(hand)
         flower_cnt = self.players[self.my_pid].n_flowers
         men_feng = self.my_pid
+        is_JUEZHANG = next((m for p in self.players for m in p.melds if m.type ==
+                            PENG and m.src_card == win_tile), None) is not None
         try:
             res = MahjongFanCalculator(pack, hand, win_tile, flower_cnt,
                                        is_ZIMO, is_JUEZHANG, is_GANG,
