@@ -157,6 +157,20 @@ class CNNTactic:
         if next((act for act in space if act[0] == HU), None) is not None:
             return HU,
 
+        for act in (act for act in space if act[0] == GANG and len(act) > 1):
+            card = act[1]
+            card_n = card_number(card)
+            if card_n is not None:
+                okay = True
+                for shifts in [(-2, -1), (-1, 1), (1, 2)]:
+                    if all(next_card(card, s) in game_state.my_hand for s in shifts):
+                        okay = False
+                        break
+                if okay:
+                    return act
+            else:
+                return act
+
         if next((act for act in space if act[0] == PLAY), None) is not None:
             input_data = self._get_cur_data()
             for i, code in enumerate(self._predict("play", input_data)):

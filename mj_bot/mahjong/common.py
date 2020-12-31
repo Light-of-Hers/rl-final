@@ -55,6 +55,16 @@ def card_number(card):
     return None
 
 
+def next_card(card, shift=1):
+    card_n = card_number(card)
+    if card_n is None:
+        return None
+    card_n += shift
+    if card_n > 9 or card_n < 1:
+        return None
+    return card_type(card) + str(card_n)
+
+
 def make_card_seq(mid_card):
     ct = card_type(mid_card)
     cn = card_number(mid_card)
