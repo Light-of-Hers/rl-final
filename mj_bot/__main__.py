@@ -1,11 +1,12 @@
 from mahjong.common import GameState
-from mahjong.tactic import RandomTactic, CNNTactic
+from mahjong.tactic import RandomTactic, CNNTactic, RuleBasedTactic
 import json
 import sys
 
 
 def main():
-    tactic = CNNTactic()
+    # tactic = CNNTactic()
+    tactic = RuleBasedTactic()
     game_state = GameState()
 
     input_json = json.loads(input())

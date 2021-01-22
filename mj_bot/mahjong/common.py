@@ -18,6 +18,8 @@ BUGANG = "BUGANG"
 PASS = "PASS"
 HU = "HU"
 
+REMAIN_CARDS = {}
+
 CARDS = []
 CARDS.extend(f"{t}{n}" for n in range(1, 10) for t in "WBT")
 CARDS.extend(f"F{n}" for n in range(1, 5))
@@ -151,7 +153,7 @@ def melds_to_plane(melds):
 
 
 class Meld:
-    def __init__(self, meld_type, cards, src_pid, src_card):
+    def __init__(self, meld_type, cards=[], src_pid=-1, src_card=None):
         self.type: str = meld_type
         self.cards: List[str] = cards
         self.src_pid: int = src_pid
@@ -392,6 +394,24 @@ class GameState:
             self.log(f"{pack}, {hand}, {win_tile}")
             return 0
         return sum(v for (v, d) in res)
+
+    def remain_cards_calc(self):
+        for card in CARDS:
+            REMAIN_CARDS[card] = 4
+        for i in range(4):
+            for card in self.players[i].played_cards:
+                REMAIN_CARDS[card] -= 1
+            for meld in self.players[i].melds:
+                if meld.cards is None:
+                    continue
+                if meld.type == GANG:
+                    REMAIN_CARDS[meld.cards[0]] = 0
+                    continue
+                for card in meld.cards:
+                    REMAIN_CARDS[card] -= 1
+                REMAIN_CARDS[meld.src_card] += 1
+        for card in self.my_hand:
+            REMAIN_CARDS[card] -= 1
 
     def next_player_cannot_draw(self):
         return self.players[(self.my_pid + 1) % 4].n_left_cards == 0
