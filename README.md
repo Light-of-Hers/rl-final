@@ -12,6 +12,10 @@
 
 ## 项目结构
 
++ `data/`：CNN网络训练出的参数以及训练结果。 
++ `3rdparty/`：第三方组件。
+  + `fan-calculator/`：算番器。
++ `handin.py`：构建可执行文件。
 + `mj_bot/`
   + `__main__.py`：程序入口处，设置当前的策略(tactic)，处理和botzone的交互。
   + `generate_dataset.py`：生成训练CNN网络需要的数据。
