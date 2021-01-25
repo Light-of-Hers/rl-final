@@ -419,41 +419,43 @@ else:
 
 #### 实战效果
 
-> 回放网址 番数 最大番 胜利方
->
-> https://botzone.org.cn/match/5fedc963d9383f7579afd8ae 10 三色三步高 Rule
-> https://botzone.org.cn/match/5fedcc69d9383f7579afde07 15 三色三步高 CNN
-> https://botzone.org.cn/match/5fedd038d9383f7579afe547 57 清一色、一色三同顺 CNN
-> https://botzone.org.cn/match/5fedd19bd9383f7579afe729 17 海底捞月 CNN
-> https://botzone.org.cn/match/5fedd332d9383f7579afe9af 16 花龙 Rule
-> https://botzone.org.cn/match/5fedd546d9383f7579afecb1 20 清龙 Rule
-> https://botzone.org.cn/match/5fedd4f0d9383f7579afec5a 19 清龙 Rule
-> https://botzone.org.cn/match/5fedd6dcd9383f7579afeec4 8 三色三步高 Rule
-> https://botzone.org.cn/match/5fedd89dd9383f7579aff10d 8 全求人 CNN
-> https://botzone.org.cn/match/5fedd99fd9383f7579aff1fb 10 全求人 CNN
-> https://botzone.org.cn/match/5feddc19d9383f7579aff728 11 三色三步高 CNN
-> https://botzone.org.cn/match/5fedde6dd9383f7579affa4d 9 三色三步高 Rule
-> https://botzone.org.cn/match/5feddfecd9383f7579affc7e 8 三色三步高 Rule
-> https://botzone.org.cn/match/5fede01dd9383f7579affca7 11 三色三步高 Rule
-> https://botzone.org.cn/match/5fede186d9383f7579affe45 20 清龙 Rule
-> https://botzone.org.cn/match/5fede0afd9383f7579affd42 14 三色三同顺 Rule
-> https://botzone.org.cn/match/5fede3bed9383f7579b000cb 19 一色三步高 CNN
-> https://botzone.org.cn/match/5fede43cd9383f7579b00167 11 三色三步高 CNN
-> https://botzone.org.cn/match/5fede4b8d9383f7579b00205 101 大三元 CNN
-> https://botzone.org.cn/match/5fede6a5d9383f7579b003ff 9 三色三步高 Rule
-> https://botzone.org.cn/match/5fede62cd9383f7579b00385 9 全求人 CNN
-> https://botzone.org.cn/match/5fede619d9383f7579b00367 8 全求人 Rule
-> https://botzone.org.cn/match/5fede73cd9383f7579b00481 9 全求人 Rule
-> https://botzone.org.cn/match/5fede7a4d9383f7579b004d8 9 花龙 Rule
-> https://botzone.org.cn/match/5fede82bd9383f7579b00596 9 全求人 CNN
-> https://botzone.org.cn/match/5fede91ed9383f7579b0069b 9 全求人 Rule
-> https://botzone.org.cn/match/5fede96ed9383f7579b006ee 8 全求人 Rule
-> https://botzone.org.cn/match/5fedeb2fd9383f7579b008ea 9 五门齐 CNN
-> https://botzone.org.cn/match/5fedeb13d9383f7579b008be 16 混一色、全求人 CNN
-> https://botzone.org.cn/match/5fedecc5d9383f7579b00a86 12 三色三同顺 Rule
-> https://botzone.org.cn/match/5fedeb95d9383f7579b00961 15 妙手回春 Rule
-> https://botzone.org.cn/match/5fedea8bd9383f7579b00819 32 全双刻 CNN
-> https://botzone.org.cn/match/5fedee1ad9383f7579b00c5d 9 全求人 CNN
+| 回放网址 | 番数 | 最大番 | 胜利方 |
+| ------- | ---- | ----- | ----- |
+| https://botzone.org.cn/match/5fedc963d9383f7579afd8ae | 10 | 三色三步高 | Rule |
+| https://botzone.org.cn/match/5fedcc69d9383f7579afde07 | 15 | 三色三步高 | CNN|
+| https://botzone.org.cn/match/5fedd038d9383f7579afe547 | 57 | 清一色、一色三同顺 | CNN|
+| https://botzone.org.cn/match/5fedd19bd9383f7579afe729 | 17 | 海底捞月 | CNN|
+| https://botzone.org.cn/match/5fedd332d9383f7579afe9af | 16 | 花龙 | Rule|
+| https://botzone.org.cn/match/5fedd546d9383f7579afecb1 | 20 | 清龙 | Rule|
+| https://botzone.org.cn/match/5fedd4f0d9383f7579afec5a | 19 | 清龙 | Rule|
+| https://botzone.org.cn/match/5fedd6dcd9383f7579afeec4 | 8 | 三色三步高 | Rule|
+| https://botzone.org.cn/match/5fedd89dd9383f7579aff10d | 8 | 全求人 | CNN|
+| https://botzone.org.cn/match/5fedd99fd9383f7579aff1fb | 10 | 全求人|  CNN|
+| https://botzone.org.cn/match/5feddc19d9383f7579aff728 | 11 | 三色三步高|  CNN|
+| https://botzone.org.cn/match/5fedde6dd9383f7579affa4d | 9 | 三色三步高 | Rule|
+| https://botzone.org.cn/match/5feddfecd9383f7579affc7e | 8 | 三色三步高 | Rule|
+| https://botzone.org.cn/match/5fede01dd9383f7579affca7 | 11|  三色三步高|  Rule|
+| https://botzone.org.cn/match/5fede186d9383f7579affe45 | 20|  清龙 | Rule|
+| https://botzone.org.cn/match/5fede0afd9383f7579affd42 | 14|  三色三同顺| Rule|
+| https://botzone.org.cn/match/5fede3bed9383f7579b000cb | 19|  一色三步高| CNN|
+| https://botzone.org.cn/match/5fede43cd9383f7579b00167 | 11|  三色三步高| CNN|
+| https://botzone.org.cn/match/5fede4b8d9383f7579b00205 | 101 | 大三元 | CNN|
+| https://botzone.org.cn/match/5fede6a5d9383f7579b003ff | 9 | 三色三步高 | Rule|
+| https://botzone.org.cn/match/5fede62cd9383f7579b00385 | 9 | 全求人 | CNN|
+| https://botzone.org.cn/match/5fede619d9383f7579b00367 | 8 | 全求人 | Rule|
+| https://botzone.org.cn/match/5fede73cd9383f7579b00481 | 9 | 全求人 | Rule|
+| https://botzone.org.cn/match/5fede7a4d9383f7579b004d8 | 9 | 花龙 | Rule|
+| https://botzone.org.cn/match/5fede82bd9383f7579b00596 | 9 | 全求人 | CNN|
+| https://botzone.org.cn/match/5fede91ed9383f7579b0069b | 9 | 全求人 | Rule|
+| https://botzone.org.cn/match/5fede96ed9383f7579b006ee | 8 | 全求人 | Rule|
+| https://botzone.org.cn/match/5fedeb2fd9383f7579b008ea | 9 | 五门齐 | CNN|
+| https://botzone.org.cn/match/5fedeb13d9383f7579b008be | 16|  混一色、全求人 | CNN|
+| https://botzone.org.cn/match/5fedecc5d9383f7579b00a86 | 12|  三色三同顺 | Rule|
+| https://botzone.org.cn/match/5fedeb95d9383f7579b00961 | 15|  妙手回春 | Rule|
+| https://botzone.org.cn/match/5fedea8bd9383f7579b00819 | 32|  全双刻 | CNN|
+| https://botzone.org.cn/match/5fedee1ad9383f7579b00c5d | 9 | 全求人 | CNN|
+
+
 
 在第二次积分赛前（12月31日），我们将监督学习的Bot和基于规则的Bot进行了2v2（对家采用相同的Bot）的33场对局，结果Rule-based获胜了18场，平均番数为11.89番；卷积神经网络的Bot获胜15场，平均番数为22.2番。可以看出，监督学习的Bot和牌次数较少，但是平均番数较大，这可能是因为当时Rule-based的Bot只编写了部分出现频率最高、番数较少的番型的规则。而监督学习的和牌番数较大，说明当起手较好时，其确实可以像人类玩家一样朝大的番型做牌。
 
