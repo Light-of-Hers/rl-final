@@ -1,4 +1,4 @@
-强化学习期末
+# 强化学习期末
 
 [TOC]
 
@@ -73,9 +73,12 @@ python3 setup.py install --user
 
 
 
-### 修改策略
+### 添加自定义策略
 
-在`tactic/`中添加新的文件、函数。一个出牌策略应该是一个函数，参数为一个`GameState`，返回一个action（类似`GameState.action_space`函数返回的列表的元素）。
+在`tactic/`中添加新的文件即相应的类。一个出牌策略应该是一个类：
+
++ 必须含有`__call__`函数：用于决策。参数为一个`GameState`，返回一个action（类似`GameState.action_space`函数返回的列表的元素）。
++ 可以含有`loading`函数：用于读取以往的对局信息。参数为`game_state, player_id, action`，表示在当前对局状态`game_state`下，标号为`player_id`的玩家做出了动作`action`。
 
 
 
@@ -111,7 +114,7 @@ python3 setup.py install --user
 
 ## 策略设计
 
-### 搜索策略
+### 搜索策略（Rule-based策略）
 
 搜索对象：没有选择对”打某哪一张牌“或者”是否鸣牌“的<u>动作</u>的估值，选择了对整体<u>状态</u>估值。
 
@@ -352,13 +355,15 @@ else:
 
 
 
-### 监督学习
+### 监督学习（CNN策略）
 
-[*Building a Computer Mahjong Player via Deep Convolutional Neural Networks*](https://arxiv.org/pdf/1906.02146v2.pdf)
+思路来源：[*Building a Computer Mahjong Player via Deep Convolutional Neural Networks*](https://arxiv.org/pdf/1906.02146v2.pdf)
 
 监督学习希望使得agent的出牌和训练集的出牌尽量一致，提高agreement rate。
 
 分别训练3个网络：出牌网络、碰网络和吃网络。杠的数据较少，直接采用规则。和牌番数足够就选择和。
+
+
 
 #### 训练集
 
@@ -382,13 +387,17 @@ else:
 - 碰网络：碰或不碰
 - 吃网络：不吃，作为第1、2、3张吃，共4种可能性
 
-#### 网络
+
+
+#### 网络设计
 
 - 3块，每块由1个卷积层、1个Batch normalization层和1个Dropout层组成，激活函数使用ReLU
   - 卷积层：卷积核大小为5 × 2，filters数量为100，不使用padding
   - Dropout 层：Dropout Rate设为0.5
 - 之后再接上一个flatten层和一个300个神经元的全联接层
 - 最后根据3个网络的不同特点使用34选1、2选1和4选1的输出层
+
+
 
 #### 训练结果
 
@@ -406,9 +415,11 @@ else:
 
 吃牌网络在验证集上的准确率约为90%。
 
+
+
 #### 实战效果
 
-> 回放网址 番数 最大番 使用方法
+> 回放网址 番数 最大番 胜利方
 >
 > https://botzone.org.cn/match/5fedc963d9383f7579afd8ae 10 三色三步高 Rule
 > https://botzone.org.cn/match/5fedcc69d9383f7579afde07 15 三色三步高 CNN
@@ -448,6 +459,14 @@ else:
 
 但是从多次练习赛的结果上看，监督学习的效果不如Rule-based的效果，在练习赛7中排名第30（规则Bot排名第12），在练习赛9中排名第10（规则Bot排名第3），在练习赛10中排名第15（规则Bot排名第8），可能的原因是出牌的准确率只有约70%，而这30%的非按标签出牌，造成不利的影响可能是决定性的。其次，人类数据集的出牌也不一定是最优策略，可能有其局限性。
 
+
+
 #### 训练投入的算力和时间
 
-TBA
++ 投入算力：`NVIDIA Tesla V100` * 4。
++ 数据规模：500000份人类对局数据。
++ 耗费时间：
+  + 出牌网络平均一个epoch耗时8分钟，共耗时160分钟左右。
+  + 碰牌网络平均一个epoch耗时20秒，共耗时7分钟左右。
+  + 吃牌网络平均一个epoch耗时25秒，共耗时8分钟左右。
+

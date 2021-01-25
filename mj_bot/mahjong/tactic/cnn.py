@@ -233,10 +233,4 @@ class CNNTactic:
                             f"peng-predicting valid at iter ({i}, {j}): {act}")
                         return act
 
-        # TODO model_input: 63 × 34 × 4，和训练输入一样
-        # 当可以出牌时调用 play_action = play_model.predict(model_input)
-        # 当可以吃时调用 chi_action = chi_model.predict(model_input)
-        # 当可以碰时调用 peng_action = peng_model.predict(peng_input)
-
-        # TODO
         return random.choice(space)
